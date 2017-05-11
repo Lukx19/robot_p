@@ -8,4 +8,11 @@
 		<param name="angle_compensate"    type="bool"   value="true"/>
 		<remap from="/scan" to="/scan_raw"/>
 	</node>
+	<!-- filtering of poles -->
+	<node name="laser_filter" pkg="robot_p" type="laser" output="screen" />
+	<!-- mapping -->
+	<include file="$(find hector_mapping)/launch/mapping_default.launch">
+		<arg name="base_frame" value="laser"/>
+		<arg name="pub_map_odom_transform" value="false"/>
+	</include>
 </launch>
