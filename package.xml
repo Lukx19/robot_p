@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>robot_p</name>
+  <version>0.0.0</version>
+  <description>The robot_p package</description>
+
+  <maintainer email="laeqten@gmail.com">Jiri Horner</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <depend>sensor_msgs</depend>
+
+  <exec_depend>rplidar_ros</exec_depend>
+</package>
