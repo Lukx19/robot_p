@@ -3,32 +3,38 @@
 #include <string>
 #include <utility>
 
-// publisher in HAL for laser
+/* removes poles (from robot construction) obstructing laser beam */
+
 ros::Publisher publisher;
 
-// constants for sensor
-#define VREP_MIN_DIST_DETECTION 0.0550
-#define VREP_MAX_DIST_DETECTION 19.9450
+// robot poles obstructiong laser bean
+constexpr float pole_distance = 0.35;
+constexpr float dist_tolerance = 0.01;
+// position tolerance for poles
+constexpr size_t pole_tolerance = 1;
+// how many scans 1 pole
+constexpr size_t pole_size = 6;
+// positions in scan where poles are
+constexpr std::initializer_list<size_t> pole_starts{60, 138, 217, 294};
 
-void laser(const sensor_msgs::LaserScan::ConstPtr& msg)
-{
+void laser(const sensor_msgs::LaserScan::ConstPtr &msg) {
   sensor_msgs::LaserScan laser_msg = *msg;
 
-  float min = std::numeric_limits<float>::max();
-  for (auto value : laser_msg.ranges) {
-    std::min(min, value);
+  for (auto idx : pole_starts) {
+    for (size_t i = std::max(size_t(0), idx - pole_tolerance);
+         i < idx + pole_size && i < laser_msg.ranges.size(); ++i) {
+      if (laser_msg.ranges[i] < pole_distance + dist_tolerance) {
+        laser_msg.ranges[i] = std::numeric_limits<float>::infinity();
+      }
+    }
   }
-
-  ROS_INFO("%f\n", (double)min);
 
   publisher.publish(std::move(laser_msg));
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   ros::init(argc, argv, "laser_filter");
-  ros::NodeHandle n("~"); // we want relative namespace
-
+  ros::NodeHandle n("~");
   ros::Subscriber laser_subsriber = n.subscribe("/scan_raw", 1000, laser);
 
   // will publish the laser mesages to the rest of the stack
@@ -36,8 +42,6 @@ int main(int argc, char **argv)
 
   ROS_INFO("laser_filter node initialized");
 
-  // runs event loop
   ros::spin();
-
   return 0;
 }
