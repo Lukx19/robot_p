@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <link name="laser_scanner">
+    <visual>
+      <geometry>
+        <box size="0.1 .07 .06"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0 0.5 0 1"/>
+      </material>
+      <origin xyz="0 0 0"/>
+    </visual>
+  </link>
+  <joint name="laser_pillar_to_laser_scanner" type="fixed">
+    <origin xyz="0.0 0 0.06"/>
+    <parent link="laser_pillar"/>
+    <child link="laser_scanner"/>
+  </joint>
+  <link name="laser_pillar">
+    <visual>
+      <geometry>
+        <box size="0.1 .07 .06"/>
+      </geometry>
+      <material name="grey">
+        <color rgba="0.8 .8 .8 .9"/>
+      </material>
+      <origin xyz="0 0 0"/>
+    </visual>
+  </link>
+  <joint name="base_to_laser_pillar" type="fixed">
+    <origin xyz="0.075 0 0.09"/>
+    <parent link="base_link"/>
+    <child link="laser_pillar"/>
+  </joint>
+</robot>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <link name="front_left_wheel">
+    <visual>
+      <geometry>
+        <cylinder length="0.05" radius="0.105"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.5 0.0 0.0 1"/>
+      </material>
+      <origin xyz="0 0 0" rpy="${-3.1415927/2.0} 0 0" />
+    </visual>
+  </link>
+  <joint name="base_to_front_left_wheel" type="fixed">
+    <origin xyz="0.07 0.175 -0.075"/>
+    <parent link="base_link"/>
+    <child link="front_left_wheel"/>
+  </joint>
+  <link name="front_right_wheel">
+    <visual>
+      <geometry>
+        <cylinder length="0.05" radius="0.105"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.5 0.0 0.0 1"/>
+      </material>
+      <origin xyz="0 0 0" rpy="${-3.1415927/2.0} 0 0" />
+    </visual>
+  </link>
+  <joint name="base_to_right_left_wheel" type="fixed">
+    <origin xyz="0.07 -0.175 -0.075"/>
+    <parent link="base_link"/>
+    <child link="front_right_wheel"/>
+  </joint>
+</robot>

@@ -5,7 +5,11 @@ project(robot_p)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
+  hardware_interface
+  controller_manager
 )
+
+find_package(Boost COMPONENTS system thread asio)
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -31,11 +35,15 @@ endif()
 
 ## Specify additional locations of header files
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
 add_executable(laser src/laser.cpp)
 target_link_libraries(laser ${catkin_LIBRARIES})
+
+add_executable(robot_control src/robot_p_control.cpp src/robothw.cpp)
+target_link_libraries(robot_control ${catkin_LIBRARIES})
 
 #############
 ## Install ##
