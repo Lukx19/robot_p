@@ -6,27 +6,20 @@
 // publisher in HAL for laser
 ros::Publisher publisher;
 
-// robot's index in ROS ecosystem (if multiple instances)
-std::string tf_prefix;
-
 // constants for sensor
 #define VREP_MIN_DIST_DETECTION 0.0550
 #define VREP_MAX_DIST_DETECTION 19.9450
 
-void laserScanData_cb(const sensor_msgs::LaserScan::ConstPtr& msg)
+void laser(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
   sensor_msgs::LaserScan laser_msg = *msg;
 
-  // include proper ros time and proper tf info
-  laser_msg.header.stamp = ros::Time::now(); // current time of data collection
-  laser_msg.header.frame_id = tf_prefix + "/laserSensors/sensor0";
+  float min = std::numeric_limits<float>::max();
+  for (auto value : laser_msg.ranges) {
+    std::min(min, value);
+  }
 
-  // set detection ranges
-  laser_msg.range_min = VREP_MIN_DIST_DETECTION;
-  laser_msg.range_max = VREP_MAX_DIST_DETECTION;
-
-  // angle_min, angle_man, angle_increment, scan_time, time_increment
-  // are correctly set in vrep
+  ROS_INFO("%f\n", (double)min);
 
   publisher.publish(std::move(laser_msg));
 }
@@ -36,15 +29,12 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "laser_filter");
   ros::NodeHandle n("~"); // we want relative namespace
 
-  // subscribe to laser messages from vrep
-  ros::Subscriber vrep_subsriber = n.subscribe("/vrep/i" + std::to_string(vrep_no) +
-    "_Pioneer_p3dx_laserScanner", 1000, laserScanData_cb);
+  ros::Subscriber laser_subsriber = n.subscribe("/scan_raw", 1000, laser);
 
   // will publish the laser mesages to the rest of the stack
-  // only 1 laserScanner present
-  publisher = n.advertise<sensor_msgs::LaserScan>("sensor0/LaserScan", 1000);
+  publisher = n.advertise<sensor_msgs::LaserScan>("/scan", 1000);
 
-  ROS_INFO("HAL(VREP): Laser node initialized");
+  ROS_INFO("laser_filter node initialized");
 
   // runs event loop
   ros::spin();
