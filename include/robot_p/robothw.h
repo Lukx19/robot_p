@@ -5,23 +5,30 @@
 #include <hardware_interface/joint_state_interface.h>
 #include <hardware_interface/robot_hw.h>
 
-#include <boost/asio.hpp>
-#include <boost/asio/serial_port.hpp>
+#include <serial/serial.h>
+
+#include <stdint.h>
+#include <array>
+#include <tuple>
 
 namespace robotp
 {
 class RobotHW : public hardware_interface::RobotHW
 {
 public:
-  RobotHW();
+  /**
+   * @brief RobotHW
+   * @param port serial port
+   * @param max_velocity in rad/s
+   */
+  RobotHW(const std::string& port, double max_velocity = 2);
   /**
     * Reads data from the robot HW
     *
     * \param time The current time
     * \param period The time passed since the last call to \ref read
     */
-  virtual void read(const ros::Time& time,
-                    const ros::Duration& period) override;
+  virtual void read(const ros::Time& time, const ros::Duration& period);
 
   /**
    * Writes data to the robot HW
@@ -29,18 +36,23 @@ public:
    * \param time The current time
    * \param period The time passed since the last call to \ref write
    */
-  virtual void write(const ros::Time& time,
-                     const ros::Duration& period) override;
+  virtual void write();
 
 private:
+  const size_t LEFT = 0;
+  const size_t RIGHT = 1;
   hardware_interface::JointStateInterface jnt_state_interface;
   hardware_interface::VelocityJointInterface jnt_vel_interface;
-  boost::asio::io_service io_;
-  boost::asio::serial_port port_;
+  serial::Serial serial_;
+  std::array<uint8_t, 4> input_buff_;
+  double max_velocity_;
   double cmd_[2];
   double pos_[2];
   double vel_[2];
   double eff_[2];
+
+  std::tuple<std::array<uint16_t, 2>, bool>
+  parseData(const std::array<uint8_t, 4>& data);
 };
 }
 

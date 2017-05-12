@@ -7,9 +7,10 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   hardware_interface
   controller_manager
+  serial
 )
 
-find_package(Boost COMPONENTS system thread asio)
+find_package(Boost COMPONENTS system thread)
 
 ################################################
 ## Declare ROS messages, services and actions ##

@@ -1,8 +1,14 @@
 <launch>
-<group ns="robot_p">
-<include file="$(find robot_p)/launch/urdf.launch" />
 
-  <node pkg="robot_p" type="robot_control" name="robot_control" />
+<group ns="robot_p">
+  <include file="$(find robot_p)/launch/urdf.launch" />
+
+  <node pkg="robot_p" type="robot_control" name="robot_control">
+    <rosparam>
+       max_radial_velocity: 2
+       serial_port: "/dev/ttyS0"
+    </rosparam>
+  </node>
 
   <rosparam command="load" file="$(find robot_p)/config/control.yaml" />
 
