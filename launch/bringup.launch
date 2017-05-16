@@ -5,8 +5,11 @@
 
   <node pkg="robot_p" type="robot_control" name="robot_control">
     <rosparam>
-       max_radial_velocity: 2
+       max_angular_velocity: 2
        serial_port: "/dev/ttyS0"
+       Kp:1
+       Ki:0.3
+       Kd:0.5
     </rosparam>
   </node>
 

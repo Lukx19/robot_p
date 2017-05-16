@@ -34,14 +34,7 @@ int main(int argc, char* argv[])
   ros::NodeHandle controller_nh;
   ros::NodeHandle nh_private("~");
 
-  double max_velocity;
-  std::string port;
-
-  nh_private.param<double>("max_radial_velocity", max_velocity, 2);
-  nh_private.param<std::string>("serial_port", port, "/dev/ttyS0");
-
-  std::unique_ptr<robotp::RobotHW> robot(
-      new robotp::RobotHW(port, max_velocity));
+  std::unique_ptr<robotp::RobotHW> robot(new robotp::RobotHW(nh_private));
 
   controller_manager::ControllerManager cm(robot.get(), controller_nh);
 

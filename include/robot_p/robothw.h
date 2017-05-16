@@ -4,11 +4,11 @@
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/joint_state_interface.h>
 #include <hardware_interface/robot_hw.h>
-
+#include <ros/ros.h>
 #include <serial/serial.h>
 
-#include <stdint.h>
 #include <array>
+#include <cstdint>
 #include <tuple>
 
 namespace robotp
@@ -21,7 +21,7 @@ public:
    * @param port serial port
    * @param max_velocity in rad/s
    */
-  RobotHW(const std::string& port, double max_velocity = 2);
+  RobotHW(ros::NodeHandle& nh_private);
   /**
     * Reads data from the robot HW
     *
@@ -53,6 +53,8 @@ private:
 
   std::tuple<std::array<uint16_t, 2>, bool>
   parseData(const std::array<uint8_t, 4>& data);
+  std::array<uint8_t, 3> floatTo3Bytes(float val) const;
+  void sendFloat(unsigned char letter, float val);
 };
 }
 

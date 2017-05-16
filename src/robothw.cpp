@@ -2,11 +2,11 @@
 #include <boost/math/constants/constants.hpp>
 using namespace robotp;
 
-RobotHW::RobotHW(const std::string &port, double max_velocity)
+RobotHW::RobotHW(ros::NodeHandle &nh_private)
   : jnt_state_interface()
   , jnt_vel_interface()
   , serial_()
-  , max_velocity_(std::abs(max_velocity))
+  , max_velocity_(2)
   , input_buff_()
 
 {
@@ -32,15 +32,36 @@ RobotHW::RobotHW(const std::string &port, double max_velocity)
 
   registerInterface(&jnt_vel_interface);
 
+  // initialize parameters
+  std::string port;
+  float Kp, Ki, Kd;
+
+  nh_private.param<double>("max_angular_velocity", max_velocity_, 2);
+  max_velocity_ = std::abs(max_velocity_);
+  nh_private.param<std::string>("serial_port", port, "/dev/ttyS0");
+  nh_private.param<float>("Kp", Kp, 1);
+  nh_private.param<float>("Ki", Kd, 0.3);
+  nh_private.param<float>("Kd", Ki, 0.5);
+
   serial_.setPort(port);
   serial_.setBaudrate(115200);
   try {
     serial_.open();
   } catch (serial::SerialException e) {
     ROS_ERROR_STREAM("[ROBOTHW]: Serial exception: " << e.what());
+    return;
   } catch (serial::IOException e) {
     ROS_ERROR_STREAM("[ROBOTHW]: Serial IO exception: " << e.what());
+    return;
   }
+
+  // send PID constants to robot
+  // these messages are in format P/I/D 3bytes of encoded float. To decode this
+  // float divide the value stored in these bytes by 1000. The data bytes are
+  // send in MSB first
+  sendFloat('P', Kp);
+  sendFloat('I', Ki);
+  sendFloat('D', Kd);
 }
 
 void RobotHW::read(const ros::Time &time, const ros::Duration &period)
@@ -48,7 +69,7 @@ void RobotHW::read(const ros::Time &time, const ros::Duration &period)
   /* reads 4 byte long messages
    * [0-3600][0-3600]
    *    -> left and right wheel CCW position represented with 2 bytes holding
-   *       values in range [0-3600]
+   *       values in range [0-3600] stored MSB first
    */
   if (serial_.available() > 4) {
     serial_.flushInput();
@@ -106,4 +127,21 @@ RobotHW::parseData(const std::array<uint8_t, 4> &data)
     }
   }
   return std::make_tuple(poses, true);
+}
+
+std::array<uint8_t, 3> robotp::RobotHW::floatTo3Bytes(float val) const
+{
+  std::array<uint8_t, 3> data;
+  uint32_t val_2b = static_cast<uint32_t>(std::trunc(val * 1000));
+  data[0] = static_cast<uint8_t>((val_2b & 0x00FF0000) >> 16);
+  data[1] = static_cast<uint8_t>((val_2b & 0x0000FF00) >> 8);
+  data[2] = static_cast<uint8_t>(val_2b & 0x000000FF);
+  return data;
+}
+
+void robotp::RobotHW::sendFloat(unsigned char letter, float val)
+{
+  auto data = floatTo3Bytes(val);
+  std::vector<uint8_t> data_v = {letter, data[0], data[1], data[2]};
+  serial_.write(data_v);
 }
