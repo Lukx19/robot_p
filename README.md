@@ -1,4 +1,15 @@
-INPUT ROS (OUTPUT controller)
+robot_p
+=======
+
+ROS software stack for a custom robot
+
+
+controller
+----------
+
+communicates via serial
+
+### INPUT ROS (OUTPUT controller)
 
 10 byte message
 
@@ -8,13 +19,13 @@ T <32 bit signed> <32 bit signed> <CRC-8>
 
 ticks from previous message
 
-OUTPUT ROS (INPUT controller)
+### OUTPUT ROS (INPUT controller)
 
 6 byte message
 
 [PID] <32 bit unsigned> <CRC-8>
 
-		float * 100000
+        float * 100000
 
 V <16 bit signed> <16 bit signed> <CRC-8>
 
