@@ -107,18 +107,28 @@ void loop_timer_stop(void)
 	TCCR0B &= ~((1 << CS02)|(1 << CS01)|(1 << CS00));	
 }
 
+uint8_t started = 0;
+
 void start(void)
 {
+	if(started)
+		return;
+		
 	PORTD |= (1 << PORTD4) | (1 << PORTD5);
 	pwm_16_start();
-	loop_timer_start();	
+	loop_timer_start();
+	started = 1;	
 }
 
 void stop(void)
 {
+	if(!started)
+		return;
+	
 	pwm_16_stop();
 	loop_timer_stop();	
 	PORTD &= ~(1 << PORTD4) | (1 << PORTD5);
+	started = 0;
 }
 
 ISR(PCINT0_vect)
@@ -149,36 +159,46 @@ ISR(INT1_vect)
 }
 
 ISR(USART_RX_vect)
-{
+{	
 	uint8_t buffer[6];
-	for (uint8_t i = 0; i < 6; i++)
-	{
-		buffer[i] = usart_receive_byte();
-	}
+	static uint8_t i = 0;
 	
-	//TODO calculate CRC
+	buffer[i++] = usart_receive_byte();
 	
-	switch(buffer[0])
-	{
-		case 'P':
-			pid_p = *((uint32_t*)&buffer[1]);
-			break;
-		case 'I':
-			pid_i = *((uint32_t*)&buffer[1]);
-			break;
-		case 'D':
-			pid_d = *((uint32_t*)&buffer[1]);
-			break;
-		case 'V':
-			left_pid.desired_speed = *((int16_t*)&buffer[1]);
-			right_pid.desired_speed = *((int16_t*)&buffer[3]);
-			break;
-		case 'S':
-			if(strcmp((char*)&buffer,"STOP"))
-				start();
-			else if(strcmp((char*)buffer,"START"))
-				stop();
-			break;
+	if(i == 6)//!!!!!!!!!!!
+	{		
+		i = 0;
+	
+		//TODO calculate CRC
+	
+		switch(buffer[0])
+		{
+			case 'P':
+				pid_p = *((uint32_t*)&buffer[1]);
+				break;
+			case 'I':
+				pid_i = *((uint32_t*)&buffer[1]);
+				break;
+			case 'D':
+				pid_d = *((uint32_t*)&buffer[1]);
+				break;
+			case 'V':
+				left_pid.desired_speed = *((int16_t*)&buffer[1]);
+				right_pid.desired_speed = *((int16_t*)&buffer[3]);
+				break;
+			case 'S':
+
+				if(strncmp((char*)&buffer,"START", 5) == 0)
+				{
+					start();
+				}
+				else if(strncmp((char*)buffer,"STOP", 4) == 0)
+				{				
+					stop();
+				}
+				
+				break;
+		}
 	}
 }
 
@@ -192,12 +212,12 @@ ISR(TIMER0_COMPA_vect)
 		uint8_t buffer[10];
 		buffer[0] = 'T';
 		*((uint32_t*)&buffer[1]) = left_pid.current_steps;
-		*((uint32_t*)&buffer[5]) = right_pid.current_steps;
+		*((uint32_t*)&buffer[5]) = right_pid.current_steps;		
 		//TODO calculate CRC
+		buffer[9] = 0;
 				
 		for (int i = 0; i < 10; i++)		
-			usart_send_byte(buffer[i]);
-		
+			usart_send_byte(buffer[i]);		
 		
 		speed_t left_power = pid_update(&left_pid, 1/*TODO*/);
 		speed_t right_power = pid_update(&right_pid, 1/*TODO*/);

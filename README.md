@@ -7,7 +7,7 @@ ROS software stack for a custom robot
 controller
 ----------
 communicates via serial
-- 115200 BAUD
+- 9600 BAUD
 - 8 data bits
 - none parity
 - 1 stop bit
@@ -49,12 +49,12 @@ V <16 bit signed> <16 bit signed> <CRC-8>
 
 
 ```
-STOP\0\0\0\0\0 <CRC-8>
+STOP\0 <CRC-8>
 ```
 all timers stop and ENBL is set to 0
 
 ```
-START\0\0\0\0 <CRC-8>
+START <CRC-8>
 ```
 all timers start and ENBL is set to 1
 
