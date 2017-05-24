@@ -10,7 +10,7 @@
 #include <avr/interrupt.h> 
 #include <math.h>
 
-typedef int16_t speed_t;
+typedef int32_t speed_t;
 
 #define DIRECTION_BACKWARD		0
 #define DIRECTION_FORWARD		1
@@ -21,13 +21,13 @@ speed_t pid_d = 1;
 
 typedef struct PID 
 {
-	uint8_t direction;	
+	uint8_t direction;
 	speed_t previous_error;
 	speed_t integral;
 	speed_t current_steps;
 	speed_t desired_speed;
 	speed_t min_output;
-	speed_t max_output;	
+	speed_t max_output;
 } pid_t;
 
 speed_t min(speed_t v1, speed_t v2)
@@ -42,12 +42,12 @@ speed_t max(speed_t v1, speed_t v2)
 
 
 void pid_init(pid_t* data, uint8_t initial_direction, speed_t min_output, speed_t max_output)
-{		
+{
 	data->direction = initial_direction;
 	data->previous_error = 0;
 	data->integral = 0;
 	data->current_steps = 0;
-	data->desired_speed = 0;	
+	data->desired_speed = 0;
 	data->min_output = min_output;
 	data->max_output = max_output;
 }

@@ -7,7 +7,7 @@ ROS software stack for a custom robot
 controller
 ----------
 communicates via serial
-- 9600 BAUD
+- 57600 BAUD
 - 8 data bits
 - none parity
 - 1 stop bit
@@ -66,12 +66,12 @@ There is basically no code in main "thread" unless initialization. All the job i
 #### Timers
 Controller uses following two timers:
 
-*	TC1 - 16 bit - Generates PWM at frequency 1 kHz. 
-*	TC0 - 8 bit - Generates interrupts at frequency 125 Hz. Following rutines are executed in every 125th interrupt (1 Hz - TODO find out appropriate frequency).
-		*	current speed transmission to ROS
-		*	PID update computation
-		*	rotation direction set according to PID output
-		*	PWM duty cycle updated according to PID output
+*   TC1 - 16 bit - Generates PWM at frequency 1 kHz. 
+*   TC0 - 8 bit - Generates interrupts at frequency 125 Hz. Following rutines are executed in every 125th interrupt (1 Hz - TODO find out appropriate frequency).
+   *	current speed transmission to ROS
+   *	PID update computation
+   *	rotation direction set according to PID output
+   *	PWM duty cycle updated according to PID output
 
 #### Usart
 All reception is done in reception interrupt thus there is no active wating for incoming messages. Transmisson method call is always "synchronous". (whole message has to be sent to leave function)

@@ -7,8 +7,6 @@
 #ifndef test_h_
 #define test_h_
 
-#define F_CPU 16000000LU
-#define USART_BAUDRATE 9600
 #include <util/delay.h>
 #include "pwm.h"
 #include "usart.h"

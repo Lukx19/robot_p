@@ -6,7 +6,7 @@
  */ 
 
 #define F_CPU 16000000LU
-#define USART_BAUDRATE 9600
+#define USART_BAUDRATE 57600
 #include <util/delay.h>
 #include "pwm.h"
 #include "usart.h"
@@ -15,7 +15,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define TICK_TEST
+
 #include <avr/interrupt.h> 
+
+
 
 //full data sheet -> http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-42735-8-bit-AVR-Microcontroller-ATmega328-328P_Datasheet.pdf
 //summary -> http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-42735-8-bit-AVR-Microcontroller-ATmega328-328P_Summary.pdf
@@ -94,6 +98,19 @@ void loop_timer_init(void)
 	OCR0A = F_CPU / 1024 / 125;
 }
 
+void send_steps(void)
+{
+	uint8_t buffer[10];
+	buffer[0] = 'T';
+	*((uint32_t*)&buffer[1]) = left_pid.current_steps;
+	*((uint32_t*)&buffer[5]) = right_pid.current_steps;
+	//TODO calculate CRC
+	buffer[9] = 0;
+	
+	for (int i = 0; i < 10; i++)
+		usart_send_byte(buffer[i]);
+}
+
 void loop_timer_start(void)
 {
 	//1024 prescaler
@@ -118,6 +135,13 @@ void start(void)
 	pwm_16_start();
 	loop_timer_start();
 	started = 1;	
+
+#ifdef TICK_TEST
+	set_left_direction(DIRECTION_BACKWARD);
+	set_right_direction(DIRECTION_FORWARD);
+	pwm_set_left_dutycycle(25);
+	pwm_set_right_dutycycle(25);
+#endif
 }
 
 void stop(void)
@@ -129,6 +153,10 @@ void stop(void)
 	loop_timer_stop();	
 	PORTD &= ~(1 << PORTD4) | (1 << PORTD5);
 	started = 0;
+
+#ifdef TICK_TEST
+	 send_steps();
+#endif
 }
 
 ISR(PCINT0_vect)
@@ -160,7 +188,7 @@ ISR(INT1_vect)
 
 ISR(USART_RX_vect)
 {	
-	uint8_t buffer[6];
+	static uint8_t buffer[6];
 	static uint8_t i = 0;
 	
 	buffer[i++] = usart_receive_byte();
@@ -187,7 +215,6 @@ ISR(USART_RX_vect)
 				right_pid.desired_speed = *((int16_t*)&buffer[3]);
 				break;
 			case 'S':
-
 				if(strncmp((char*)&buffer,"START", 5) == 0)
 				{
 					start();
@@ -204,20 +231,15 @@ ISR(USART_RX_vect)
 
 ISR(TIMER0_COMPA_vect)
 {
+#ifndef TICK_TEST
+
 	static uint8_t ticks = 0;
 	ticks++;
 	
 	if(ticks == 125)//effective frequency 1Hz because timer runs at 125Hz
 	{
-		uint8_t buffer[10];
-		buffer[0] = 'T';
-		*((uint32_t*)&buffer[1]) = left_pid.current_steps;
-		*((uint32_t*)&buffer[5]) = right_pid.current_steps;		
-		//TODO calculate CRC
-		buffer[9] = 0;
-				
-		for (int i = 0; i < 10; i++)		
-			usart_send_byte(buffer[i]);		
+		send_steps();
+
 		
 		speed_t left_power = pid_update(&left_pid, 1/*TODO*/);
 		speed_t right_power = pid_update(&right_pid, 1/*TODO*/);
@@ -226,10 +248,11 @@ ISR(TIMER0_COMPA_vect)
 		set_right_direction(right_power < 0 ? DIRECTION_BACKWARD : DIRECTION_FORWARD);
 		
 		pwm_set_left_dutycycle(abs(left_power));
-		pwm_set_right_dutycycle(abs(right_power));		
+		pwm_set_right_dutycycle(abs(right_power));
 		
-		ticks = 0;	
+		ticks = 0;
 	}
+#endif
 }
 
 void main_release(void)
@@ -245,7 +268,7 @@ void main_release(void)
 	while(1)
 	{
 
-	}	
+	}
 }
 
 int main (void)
