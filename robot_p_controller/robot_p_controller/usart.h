@@ -48,4 +48,20 @@ uint8_t usart_receive_byte()
 	return UDR0;
 }
 
+void usart_send_buffer(uint8_t* buffer, uint8_t size)
+{
+	for (uint8_t i = 0; i < size; i++)
+	{
+		usart_send_byte(buffer[i]);
+	}
+}
+
+void usart_init_buffer(uint8_t* buffer, uint8_t size)
+{
+	for (int i = 0; i < size; i++)
+	{
+		buffer[i] = 0;
+	}
+}
+
 #endif

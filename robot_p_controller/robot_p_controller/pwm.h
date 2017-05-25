@@ -21,7 +21,7 @@
 
 //f_pwm = f_clk/(N*(1+TOP))    ....for N=8 prescaler, f_clk = 16MHz
 //TOP = f_clk/(N * f_pwm) - 1  ....our desired f_pwm = 1000Hz
-#define TIMER_TOP  (F_CPU/(8*1000) - 1)
+#define TIMER_TOP  (uint16_t)((F_CPU/(8*1000LU) - 1))
 
 void pwm_16_init(void)
 {
@@ -71,7 +71,8 @@ void pwm_set_left_dutycycle(uint8_t percentage)
 		exit(1);
 	}
 	
-	uint16_t value = (TIMER_TOP * percentage)/100;
+	//TODO find out what is wrong with timer top
+	uint16_t value = ((uint32_t)(TIMER_TOP - 100) * (uint32_t)percentage)/100;
 	
 	OCR1AH = (uint8_t)(value >> 8);
 	OCR1AL = (uint8_t)value;	
@@ -85,8 +86,9 @@ void pwm_set_right_dutycycle(uint8_t percentage)
 		//TODO mark somehow error
 		exit(1);
 	}
-		
-	uint16_t value = (TIMER_TOP * percentage)/100;
+	
+	//TODO find out what is wrong with timer top
+	uint16_t value = ((uint32_t)(TIMER_TOP - 100) * (uint32_t)percentage)/100;
 	
 	OCR1BH = (uint8_t)(value >> 8);
 	OCR1BL = (uint8_t)value;

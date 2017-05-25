@@ -10,14 +10,14 @@
 #include <avr/interrupt.h> 
 #include <math.h>
 
-typedef int32_t speed_t;
+typedef int16_t speed_t;
 
 #define DIRECTION_BACKWARD		0
 #define DIRECTION_FORWARD		1
 
-speed_t pid_p = 1;
-speed_t pid_i = 1;
-speed_t pid_d = 1;
+speed_t pid_p = 32; //effectively 1
+speed_t pid_i = 32; //effectively 1
+speed_t pid_d = 32; //effectively 1
 
 typedef struct PID 
 {
@@ -65,21 +65,21 @@ void pid_add_speed_tick(pid_t* data)
 	}	
 }
 
-speed_t pid_update(pid_t* data, speed_t dt)
+speed_t pid_update(pid_t* data)
 {		
-	//TODO find out right value for multiplying flowing variables in order to have sufficient precision
-	speed_t current_speed = data->current_steps / dt;
+	//const speed_t dt = 1; //assume one time unit 1/25 s
+	//thus dt is commented out in following code
+	speed_t current_speed = data->current_steps;// / dt;
 	speed_t error = data->desired_speed - current_speed;
 	
-	data->integral += error * dt;
+	data->integral += error;// * dt;
 	
 	//Reset Windup - do not add to integral if it is not in pwm bounds
 	//http://brettbeauregard.com/blog/2011/04/improving-the-beginner%E2%80%99s-pid-reset-windup/
-	data->integral = max(min(data->integral, data->max_output),data->min_output);
+	data->integral = max(min(data->integral, data->max_output), data->min_output);
 	
-	
-	speed_t derivative = (error - data->previous_error)/dt;
-	speed_t output = (pid_p*error + pid_i*data->integral + pid_d*derivative)/100000; //TODO dividing because p,i,d are multiplied by 100000
+	speed_t derivative = (error - data->previous_error);// /dt;
+	speed_t output = (pid_p*error + pid_i*data->integral + pid_d*derivative) >> 5; //dividing because p,i,d are multiplied by 32 = 2^5
 	
 	//Reset Windup for output
 	output = max(min(output, data->max_output),data->min_output);

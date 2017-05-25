@@ -18,7 +18,7 @@ communicates via serial
 10 byte message
 
 ```
-TODO measure how big types are needed
+TODO 16 bit signed will be probably enough
 T <32 bit signed> <32 bit signed> <CRC-8>
 
   left wheel        right wheel
@@ -35,10 +35,9 @@ one of the driver sent ALM signal, controller is now in stopped state
 6 byte message
 
 ```
-TODO measure how much precision is needed
 [PID] <32 bit unsigned> <CRC-8>
 
-        float * 100000
+        float * 32 
 ```
 
 ```
@@ -51,12 +50,12 @@ V <16 bit signed> <16 bit signed> <CRC-8>
 ```
 STOP\0 <CRC-8>
 ```
-all timers stop and ENBL is set to 0
+all timers stop and ENBL is set to 1 
 
 ```
 START <CRC-8>
 ```
-all timers start and ENBL is set to 1
+all timers start and ENBL is set to 0 
 
 ### Documentation
 Since base unit for atmel328P is 1 byte processor can not deal for example with int atomically. Thus there can be race condition between main "thread" and interrupts. By default interupts can not be interrupted by another one. Interrupts are waiting until they are processed. 
@@ -67,11 +66,18 @@ There is basically no code in main "thread" unless initialization. All the job i
 Controller uses following two timers:
 
 *   TC1 - 16 bit - Generates PWM at frequency 1 kHz. 
-*   TC0 - 8 bit - Generates interrupts at frequency 125 Hz. Following rutines are executed in every 125th interrupt (1 Hz - TODO find out appropriate frequency).
-   *	current speed transmission to ROS
-   *	PID update computation
-   *	rotation direction set according to PID output
-   *	PWM duty cycle updated according to PID output
+*   TC0 - 8 bit - Generates interrupts at frequency 125 Hz. Following rutines are executed in every 5th interrupt thus 25 Hz.
+   *   current speed transmission to ROS
+   *   PID update computation
+   *   rotation direction set according to PID output
+   *   PWM duty cycle updated according to PID output
+
+#### PID
+
+*   P,I,D variables are multibled by 32 thus in PID algorithm divided by 32=2^5 (shift can be used instead)
+*   PID uses as dt = 1 where 1 is in units of 1/25 s thus one unit of time is one measure-timer interrupt
+*   PID output and integral is clamped to [-100;100] interval which is appropriate interval for pwm gneratin
+
 
 #### Usart
 All reception is done in reception interrupt thus there is no active wating for incoming messages. Transmisson method call is always "synchronous". (whole message has to be sent to leave function)

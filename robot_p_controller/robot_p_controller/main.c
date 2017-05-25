@@ -36,7 +36,7 @@ void pins_init(void)
 	//SPEED P2(INT0)(D2)
 	//SPEED P3(INT1)(D3)
 	//setup pull-ups
-	PORTD |= (1 << PORTD2) | (1<<PORTD3);
+	//PORTD |= (1 << PORTD2) | (1<<PORTD3);
 	
 	//interrupts on rising edge
 	EICRA |= (1 << ISC01) | (1 << ISC00) | (1 << ISC11) | (1 << ISC10);
@@ -46,11 +46,16 @@ void pins_init(void)
 	DDRD |= (1 << DDD4) | (1 << DDD5);
 	//output F/R L/R:
 	DDRD |= (1 << DDD6) | (1 << DDD7);
+	PORTD |= (1 << PORTD4) | (1 << PORTD5);//init to stop
+
 	//output BRK L
 	DDRB |= (1 << DDB0);
 	//output BRK R
 	DDRC |= (1 << DDC6);
 	//output B1/2 pwm
+
+	PORTB |= (1 << PORTB0);//init to not break
+	PORTC |= (1 << PORTC6);//init to not break
 	
 	//input ALM L/R
 	PORTB |= (1 << PORTB3) | (1 << PORTB4);
@@ -95,20 +100,21 @@ void loop_timer_init(void)
 	TIMSK0 |= (1 << OCIE0A);
 	//setup interrupts to 125Hz
 	//16Mhz / 1024 prescaler / 125 = 125 MHz
-	OCR0A = F_CPU / 1024 / 125;
+	OCR0A = (uint8_t)(F_CPU / 1024LU / 125LU);
 }
 
 void send_steps(void)
 {
-	uint8_t buffer[10];
+	uint8_t s = 10;
+	uint8_t buffer[s];
+	usart_init_buffer(buffer, s);
 	buffer[0] = 'T';
 	*((uint32_t*)&buffer[1]) = left_pid.current_steps;
 	*((uint32_t*)&buffer[5]) = right_pid.current_steps;
 	//TODO calculate CRC
-	buffer[9] = 0;
 	
-	for (int i = 0; i < 10; i++)
-		usart_send_byte(buffer[i]);
+	usart_send_buffer(buffer, s);
+	//itoa(left_pid.current_steps, buffer, 10);
 }
 
 void loop_timer_start(void)
@@ -131,16 +137,21 @@ void start(void)
 	if(started)
 		return;
 		
-	PORTD |= (1 << PORTD4) | (1 << PORTD5);
+	//set ENBL to LOW -> enabled
+	PORTD &= ~((1 << PORTD4) | (1 << PORTD5));
+
 	pwm_16_start();
 	loop_timer_start();
 	started = 1;	
 
+	left_pid.current_steps = 0;
+	right_pid.current_steps = 0;
+
 #ifdef TICK_TEST
 	set_left_direction(DIRECTION_BACKWARD);
 	set_right_direction(DIRECTION_FORWARD);
-	pwm_set_left_dutycycle(25);
-	pwm_set_right_dutycycle(25);
+	pwm_set_left_dutycycle(50);
+	pwm_set_right_dutycycle(50);
 #endif
 }
 
@@ -151,7 +162,9 @@ void stop(void)
 	
 	pwm_16_stop();
 	loop_timer_stop();	
-	PORTD &= ~(1 << PORTD4) | (1 << PORTD5);
+
+	//set ENBL to HIGH-> disabled 
+	PORTD |= (1 << PORTD4) | (1 << PORTD5);
 	started = 0;
 
 #ifdef TICK_TEST
@@ -161,29 +174,37 @@ void stop(void)
 
 ISR(PCINT0_vect)
 {
-	if((PINB & ((1 << PINB3)|(1 << PINB4))) != 0)
+	uint8_t s = 10;
+	uint8_t text[s];
+	usart_init_buffer(text, s);
+
+	if((PINB & (1 << PINB3)) == 0)
 	{
 		stop();
 		
-		char text[10] = "ALM_ERR";
-		for (int i = 6; i < 10; i++)	
-			text[i] = 0;
-			
-		//TODO CRC
-		
-		for (int i = 0; i < 10; i++)		
-			usart_send_byte(text[i]);		
+		strcpy(text, "ALM_ERR_L");					
+		usart_send_buffer(text, s);		
+	}
+
+	if((PINB & (1 << PINB4)) == 0)
+	{
+		stop();
+
+		strcpy(text, "ALM_ERR_R");					
+		usart_send_buffer(text, s);
 	}
 }
 
 ISR(INT0_vect)
 {
 	pid_add_speed_tick(&left_pid);
+	usart_send_byte('x');
 }
 
 ISR(INT1_vect)
 {
 	pid_add_speed_tick(&right_pid);
+	usart_send_byte('y');
 }
 
 ISR(USART_RX_vect)
@@ -235,14 +256,16 @@ ISR(TIMER0_COMPA_vect)
 
 	static uint8_t ticks = 0;
 	ticks++;
-	
-	if(ticks == 125)//effective frequency 1Hz because timer runs at 125Hz
+
+	//effective frequency 25Hz because timer runs at 125Hz
+	#define  EFF_F = 25;
+	//one unit of time is 1/EFF_F = 1/125 s thus initali dt=25 !!!!
+	if(ticks == 5)
 	{
 		send_steps();
-
 		
-		speed_t left_power = pid_update(&left_pid, 1/*TODO*/);
-		speed_t right_power = pid_update(&right_pid, 1/*TODO*/);
+		speed_t left_power = pid_update(&left_pid, EFF_F);
+		speed_t right_power = pid_update(&right_pid, EFF_F);
 		
 		set_left_direction(left_power < 0 ? DIRECTION_BACKWARD : DIRECTION_FORWARD);
 		set_right_direction(right_power < 0 ? DIRECTION_BACKWARD : DIRECTION_FORWARD);
