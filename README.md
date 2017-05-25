@@ -35,4 +35,6 @@ ticks from previous message
 V <16 bit signed> <16 bit signed> <CRC-8>
 
    left wheel       right wheel
+
+   values are in the range [-255,255]
 ```
