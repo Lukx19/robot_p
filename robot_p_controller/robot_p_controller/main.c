@@ -15,11 +15,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define TICK_TEST
+//#define TICK_TEST
+#define PID_TEST
 
 #include <avr/interrupt.h> 
-
-
 
 //full data sheet -> http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-42735-8-bit-AVR-Microcontroller-ATmega328-328P_Datasheet.pdf
 //summary -> http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-42735-8-bit-AVR-Microcontroller-ATmega328-328P_Summary.pdf
@@ -36,11 +35,12 @@ void pins_init(void)
 	//SPEED P2(INT0)(D2)
 	//SPEED P3(INT1)(D3)
 	//setup pull-ups
-	//PORTD |= (1 << PORTD2) | (1<<PORTD3);
+	PORTD |= (1 << PORTD2) | (1<<PORTD3);
+	MCUCR &= ~(1 << PUD);
 	
 	//interrupts on rising edge
-	EICRA |= (1 << ISC01) | (1 << ISC00) | (1 << ISC11) | (1 << ISC10);
-	EIMSK |= (1 << INT0) | (1 << INT1);
+	EICRA |= (1 << ISC11) | (1 << ISC01); 
+	EIMSK |= (1 << INT1) | (1 << INT0);
 	
 	//output ENBL L/R:	
 	DDRD |= (1 << DDD4) | (1 << DDD5);
@@ -69,10 +69,10 @@ void set_left_direction(uint8_t direction)
 	switch(direction)
 	{
 		case DIRECTION_FORWARD:
-			PORTD |= (1 << PORTD6);
+			PORTD &= ~(1 << PORTD6);
 			break;
 		case DIRECTION_BACKWARD:
-			PORTD &= ~(1 << PORTD6);
+			PORTD |= (1 << PORTD6);
 			break;		
 	}
 }
@@ -83,11 +83,11 @@ void set_right_direction(uint8_t direction)
 	switch(direction)
 	{
 		case DIRECTION_FORWARD:
-		PORTD |= (1 << PORTD7);
-		break;
+			PORTD &= ~(1 << PORTD7);
+			break;
 		case DIRECTION_BACKWARD:
-		PORTD &= ~(1 << PORTD7);
-		break;
+			PORTD |= (1 << PORTD7);
+			break;
 	}
 }
 
@@ -105,16 +105,15 @@ void loop_timer_init(void)
 
 void send_steps(void)
 {
-	uint8_t s = 10;
+	uint8_t s = 6;
 	uint8_t buffer[s];
 	usart_init_buffer(buffer, s);
 	buffer[0] = 'T';
-	*((uint32_t*)&buffer[1]) = left_pid.current_steps;
-	*((uint32_t*)&buffer[5]) = right_pid.current_steps;
+	*((speed_t*)&buffer[1]) = left_pid.current_steps;
+	*((speed_t*)&buffer[3]) = right_pid.current_steps;
 	//TODO calculate CRC
 	
 	usart_send_buffer(buffer, s);
-	//itoa(left_pid.current_steps, buffer, 10);
 }
 
 void loop_timer_start(void)
@@ -174,7 +173,7 @@ void stop(void)
 
 ISR(PCINT0_vect)
 {
-	uint8_t s = 10;
+	uint8_t s = 6;
 	uint8_t text[s];
 	usart_init_buffer(text, s);
 
@@ -182,7 +181,7 @@ ISR(PCINT0_vect)
 	{
 		stop();
 		
-		strcpy(text, "ALM_ERR_L");					
+		strcpy((char*)text, "ALM_L");					
 		usart_send_buffer(text, s);		
 	}
 
@@ -190,7 +189,7 @@ ISR(PCINT0_vect)
 	{
 		stop();
 
-		strcpy(text, "ALM_ERR_R");					
+		strcpy((char*)text, "ALM_R");					
 		usart_send_buffer(text, s);
 	}
 }
@@ -198,13 +197,11 @@ ISR(PCINT0_vect)
 ISR(INT0_vect)
 {
 	pid_add_speed_tick(&left_pid);
-	usart_send_byte('x');
 }
 
 ISR(INT1_vect)
 {
 	pid_add_speed_tick(&right_pid);
-	usart_send_byte('y');
 }
 
 ISR(USART_RX_vect)
@@ -257,21 +254,41 @@ ISR(TIMER0_COMPA_vect)
 	static uint8_t ticks = 0;
 	ticks++;
 
-	//effective frequency 25Hz because timer runs at 125Hz
-	#define  EFF_F = 25;
-	//one unit of time is 1/EFF_F = 1/125 s thus initali dt=25 !!!!
+	//effective frequency 125/5 = 25Hz because timer runs at 125Hz
 	if(ticks == 5)
 	{
+#ifndef PID_TEST
 		send_steps();
-		
-		speed_t left_power = pid_update(&left_pid, EFF_F);
-		speed_t right_power = pid_update(&right_pid, EFF_F);
+#else
+
+		usart_send_byte('S');
+		usart_send_byte('L');
+		usart_send_byte(' ');
+		usart_send_num_str(left_pid.current_steps);
+		usart_write_line();
+
+		usart_send_byte('S');
+		usart_send_byte('R');
+		usart_send_byte(' ');
+		usart_send_num_str(right_pid.current_steps);
+		usart_write_line();
+#endif
+
+		speed_t left_power = pid_update(&left_pid);
+		speed_t right_power = pid_update(&right_pid);
 		
 		set_left_direction(left_power < 0 ? DIRECTION_BACKWARD : DIRECTION_FORWARD);
 		set_right_direction(right_power < 0 ? DIRECTION_BACKWARD : DIRECTION_FORWARD);
 		
 		pwm_set_left_dutycycle(abs(left_power));
 		pwm_set_right_dutycycle(abs(right_power));
+
+#ifdef PID_TEST
+		usart_send_num_str((int32_t)left_power);
+		usart_send_byte(' ');
+		usart_send_num_str((int32_t)right_power);
+		usart_write_line();
+#endif
 		
 		ticks = 0;
 	}
@@ -284,8 +301,8 @@ void main_release(void)
 	pwm_16_init();
 	pins_init();
 	loop_timer_init();	
-	pid_init(&left_pid, DIRECTION_BACKWARD, -100, 100);
-	pid_init(&right_pid, DIRECTION_FORWARD, -100, 100);
+	pid_init(&left_pid, DIRECTION_BACKWARD, -100, 100, -30);
+	pid_init(&right_pid, DIRECTION_FORWARD, -100, 100, 30);
 	
 	sei();	
 	while(1)
@@ -299,4 +316,3 @@ int main (void)
 	main_release();
 	//test_pwm();
 }
-

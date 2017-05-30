@@ -25,7 +25,7 @@
 
 void pwm_16_init(void)
 {
-	//setting up (OC1A)PBjdkk1 - left wheel and (OC1B)PB2 - right wheel
+	//setting up (OC1A)PB1 - left wheel and (OC1B)PB2 - right wheel
 	DDRB |= (1 << DDB1) | (1 << DDB2); //pin 11 resp. 12
 	
 	//setting up: Clear OCnA/OCnB/OCnC on compare match,
@@ -66,10 +66,7 @@ void pwm_16_stop(void)
 void pwm_set_left_dutycycle(uint8_t percentage)
 {
 	if(percentage > 100)
-	{
-		//TODO mark somehow error
-		exit(1);
-	}
+		percentage = 100;
 	
 	//TODO find out what is wrong with timer top
 	uint16_t value = ((uint32_t)(TIMER_TOP - 100) * (uint32_t)percentage)/100;
@@ -82,10 +79,7 @@ void pwm_set_left_dutycycle(uint8_t percentage)
 void pwm_set_right_dutycycle(uint8_t percentage)
 {
 	if(percentage > 100)
-	{
-		//TODO mark somehow error
-		exit(1);
-	}
+		percentage = 100;
 	
 	//TODO find out what is wrong with timer top
 	uint16_t value = ((uint32_t)(TIMER_TOP - 100) * (uint32_t)percentage)/100;

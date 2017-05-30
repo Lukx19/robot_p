@@ -15,20 +15,20 @@ communicates via serial
 
 ### INPUT ROS (OUTPUT controller)
 
-10 byte message
+6 byte message
 
 ```
-TODO 16 bit signed will be probably enough
-T <32 bit signed> <32 bit signed> <CRC-8>
+T <16 bit signed> <16 bit signed> <CRC-8>
 
   left wheel        right wheel
 ```
-ticks from previous message
+ticks from previous message - one turn should have 257.8 ticks
 
 ```
-ALM_ERR\0\0 <CRC-8>
+ALM_L <CRC-8>
+ALM_R <CRC-8>
 ```
-one of the driver sent ALM signal, controller is now in stopped state
+left (right) driver sent ALM signal, controller is now in stopped state
 
 ### OUTPUT ROS (INPUT controller)
 
@@ -74,9 +74,20 @@ Controller uses following two timers:
 
 #### PID
 
-*   P,I,D variables are multibled by 32 thus in PID algorithm divided by 32=2^5 (shift can be used instead)
+*   P,I,D variables are multipled by 32 thus in PID algorithm divided by 32=2^5 (shift can be used instead)
 *   PID uses as dt = 1 where 1 is in units of 1/25 s thus one unit of time is one measure-timer interrupt
 *   PID output and integral is clamped to [-100;100] interval which is appropriate interval for pwm gneratin
+
+##### Current PID values
+
+```
+speed_t pid_p = 50; //effectively 1.56
+speed_t pid_i = 23; //effectively 0.71
+speed_t pid_d = 4; //effectively 0.125
+```
+
+![pinout](./robot_p_controller/pid_test/p23L.png "left wheel")
+![pinout](./robot_p_controller/pid_test/p23R.png "right wheel")
 
 
 #### Usart

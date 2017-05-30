@@ -20,6 +20,7 @@
 #define UBRR_VALUE (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
 
 #include <avr/io.h>
+#include <string.h>
 
 void usart_init(void)
 {
@@ -62,6 +63,22 @@ void usart_init_buffer(uint8_t* buffer, uint8_t size)
 	{
 		buffer[i] = 0;
 	}
+}
+
+#define USART_STR_BUFF_LEN 20
+
+void usart_send_num_str(int32_t number)
+{
+	char buffer[USART_STR_BUFF_LEN];
+	usart_init_buffer((uint8_t*)buffer, USART_STR_BUFF_LEN);
+	char* num = itoa(number, buffer, 10);
+	usart_send_buffer((uint8_t*)buffer, strlen(num));
+}
+
+void usart_write_line(void)
+{
+	usart_send_byte('\r');
+	usart_send_byte('\n');
 }
 
 #endif
