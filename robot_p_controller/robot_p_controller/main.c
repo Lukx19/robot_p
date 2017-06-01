@@ -16,7 +16,7 @@
 #include <stdlib.h>
 
 //#define TICK_TEST
-#define PID_TEST
+//#define PID_TEST
 
 #include <avr/interrupt.h> 
 
@@ -28,6 +28,10 @@
 //NOTE: by default interrupt can not be interrupted by another one
 
 pid_t left_pid, right_pid;
+
+//if the value is -1 alm is not up thus do not measure time
+int16_t almL_time = -1;
+int16_t almR_time = -1;
 
 void pins_init(void)
 {
@@ -135,6 +139,9 @@ void start(void)
 {
 	if(started)
 		return;
+
+	almL_time = -1;
+	almR_time = -1;
 		
 	//set ENBL to LOW -> enabled
 	PORTD &= ~((1 << PORTD4) | (1 << PORTD5));
@@ -166,6 +173,9 @@ void stop(void)
 	PORTD |= (1 << PORTD4) | (1 << PORTD5);
 	started = 0;
 
+	almL_time = -1;
+	almR_time = -1;
+
 #ifdef TICK_TEST
 	 send_steps();
 #endif
@@ -173,24 +183,33 @@ void stop(void)
 
 ISR(PCINT0_vect)
 {
-	uint8_t s = 6;
-	uint8_t text[s];
-	usart_init_buffer(text, s);
+	if(!started)
+		return;
 
+	//start measure alm up time - if it is too long stop is called in timer interrupt
+	//if alm is changed to down -> stop timer by setting it to -1
+	//NOTE: "false" alm is not up even 1/125 of second => still alm up time out is set to 100 ms
 	if((PINB & (1 << PINB3)) == 0)
 	{
-		stop();
-		
-		strcpy((char*)text, "ALM_L");					
-		usart_send_buffer(text, s);		
+		//usart_send_byte('L');
+		almL_time = 0;
+	}
+	else 
+	{
+		//usart_send_byte('X');
+		almL_time = -1;
 	}
 
 	if((PINB & (1 << PINB4)) == 0)
 	{
-		stop();
+		//usart_send_byte('R');
+		almR_time = 0;
 
-		strcpy((char*)text, "ALM_R");					
-		usart_send_buffer(text, s);
+	}
+	else 
+	{
+		//usart_send_byte('Y');
+		almR_time = -1;
 	}
 }
 
@@ -247,8 +266,30 @@ ISR(USART_RX_vect)
 	}
 }
 
+
+void check_alm(int16_t* alm_time, char* alm_message)
+{
+	if(*alm_time >= 0)//alm timer is up
+	{
+		(*alm_time)++;
+
+		if(alm_time >= 12) // alm is up roughly half a 100 milisecond
+		{
+			uint8_t s = 6;
+			uint8_t text[s];
+			usart_init_buffer(text, s);
+			stop();
+			strcpy((char*)text, alm_message);					
+			usart_send_buffer(text, s);		
+		}
+	}
+}
+
 ISR(TIMER0_COMPA_vect)
 {
+	check_alm(&almL_time, "ALM_L");
+	check_alm(&almR_time, "ALM_R");
+
 #ifndef TICK_TEST
 
 	static uint8_t ticks = 0;
@@ -258,9 +299,8 @@ ISR(TIMER0_COMPA_vect)
 	if(ticks == 5)
 	{
 #ifndef PID_TEST
-		send_steps();
+		//send_steps();
 #else
-
 		usart_send_byte('S');
 		usart_send_byte('L');
 		usart_send_byte(' ');

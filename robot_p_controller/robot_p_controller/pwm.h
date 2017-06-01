@@ -69,7 +69,7 @@ void pwm_set_left_dutycycle(uint8_t percentage)
 		percentage = 100;
 	
 	//TODO find out what is wrong with timer top
-	uint16_t value = ((uint32_t)(TIMER_TOP - 100) * (uint32_t)percentage)/100;
+	uint16_t value = ((uint32_t)(TIMER_TOP) * (uint32_t)percentage)/100;
 	
 	OCR1AH = (uint8_t)(value >> 8);
 	OCR1AL = (uint8_t)value;	
@@ -82,7 +82,7 @@ void pwm_set_right_dutycycle(uint8_t percentage)
 		percentage = 100;
 	
 	//TODO find out what is wrong with timer top
-	uint16_t value = ((uint32_t)(TIMER_TOP - 100) * (uint32_t)percentage)/100;
+	uint16_t value = ((uint32_t)(TIMER_TOP) * (uint32_t)percentage)/100;
 	
 	OCR1BH = (uint8_t)(value >> 8);
 	OCR1BL = (uint8_t)value;
