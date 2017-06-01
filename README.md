@@ -85,9 +85,15 @@ speed_t pid_p = 50; //effectively 1.56
 speed_t pid_i = 23; //effectively 0.71
 speed_t pid_d = 4; //effectively 0.125
 ```
+PID behaivour with top speed:
 
 ![pinout](./robot_p_controller/pid_test/p23L.png "left wheel")
 ![pinout](./robot_p_controller/pid_test/p23R.png "right wheel")
+
+PID behaivour when changing top speed to slow speed every 3 seconds:
+
+![pinout](./robot_p_controller/pid_test/p3L.png "left wheel")
+![pinout](./robot_p_controller/pid_test/p3R.png "right wheel")
 
 
 #### Usart

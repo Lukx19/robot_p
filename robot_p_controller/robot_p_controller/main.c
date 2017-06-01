@@ -15,7 +15,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-//#define TICK_TEST
 //#define PID_TEST
 
 #include <avr/interrupt.h> 
@@ -65,6 +64,22 @@ void pins_init(void)
 	PORTB |= (1 << PORTB3) | (1 << PORTB4);
 	PCICR |= (1 << PCIE0);
 	PCMSK0 |= (1 << PCINT4) | (1 << PCINT3);
+}
+
+void set_left_break(uint8_t active)
+{
+	if(active)
+		PORTB &= ~(1 << PORTB0);
+	else
+		PORTB |= (1 << PORTB0);
+}
+
+void set_right_break(uint8_t active)
+{
+	if(active)
+		PORTC &= ~(1 << PORTC6);
+	else
+		PORTC |= (1 << PORTC6);
 }
 
 void set_left_direction(uint8_t direction)
@@ -152,13 +167,8 @@ void start(void)
 
 	left_pid.current_steps = 0;
 	right_pid.current_steps = 0;
-
-#ifdef TICK_TEST
-	set_left_direction(DIRECTION_BACKWARD);
-	set_right_direction(DIRECTION_FORWARD);
-	pwm_set_left_dutycycle(50);
-	pwm_set_right_dutycycle(50);
-#endif
+	set_left_break(1);
+	set_right_break(1);
 }
 
 void stop(void)
@@ -176,9 +186,8 @@ void stop(void)
 	almL_time = -1;
 	almR_time = -1;
 
-#ifdef TICK_TEST
-	 send_steps();
-#endif
+	set_left_break(0);
+	set_right_break(0);
 }
 
 ISR(PCINT0_vect)
@@ -266,14 +275,13 @@ ISR(USART_RX_vect)
 	}
 }
 
-
 void check_alm(int16_t* alm_time, char* alm_message)
 {
 	if(*alm_time >= 0)//alm timer is up
 	{
 		(*alm_time)++;
 
-		if(alm_time >= 12) // alm is up roughly half a 100 milisecond
+		if(*alm_time >= 12) // alm is up roughly half a 100 milisecond
 		{
 			uint8_t s = 6;
 			uint8_t text[s];
@@ -285,21 +293,10 @@ void check_alm(int16_t* alm_time, char* alm_message)
 	}
 }
 
-ISR(TIMER0_COMPA_vect)
+void control_update(void)
 {
-	check_alm(&almL_time, "ALM_L");
-	check_alm(&almR_time, "ALM_R");
-
-#ifndef TICK_TEST
-
-	static uint8_t ticks = 0;
-	ticks++;
-
-	//effective frequency 125/5 = 25Hz because timer runs at 125Hz
-	if(ticks == 5)
-	{
 #ifndef PID_TEST
-		//send_steps();
+		send_steps();
 #else
 		usart_send_byte('S');
 		usart_send_byte('L');
@@ -316,9 +313,23 @@ ISR(TIMER0_COMPA_vect)
 
 		speed_t left_power = pid_update(&left_pid);
 		speed_t right_power = pid_update(&right_pid);
+
+		if(left_power == 0)
+			set_left_break(1);
+		else
+			set_left_break(0);
+
+		if(right_power == 0)
+			set_right_break(1);
+		else
+			set_right_break(0);
 		
-		set_left_direction(left_power < 0 ? DIRECTION_BACKWARD : DIRECTION_FORWARD);
-		set_right_direction(right_power < 0 ? DIRECTION_BACKWARD : DIRECTION_FORWARD);
+		//if power is zero let direction as it is, because ticks will probably probably in the same direction as it was
+		if(left_power != 0)
+			set_left_direction(left_power < 0 ? DIRECTION_BACKWARD : DIRECTION_FORWARD);
+
+		if(right_power != 0)
+			set_right_direction(right_power < 0 ? DIRECTION_BACKWARD : DIRECTION_FORWARD);
 		
 		pwm_set_left_dutycycle(abs(left_power));
 		pwm_set_right_dutycycle(abs(right_power));
@@ -330,9 +341,45 @@ ISR(TIMER0_COMPA_vect)
 		usart_write_line();
 #endif
 		
-		ticks = 0;
+}
+
+#ifdef PID_TEST
+uint16_t pid_test_t = 0;
+#endif
+
+ISR(TIMER0_COMPA_vect)
+{
+	check_alm(&almL_time, "ALM_L");
+	check_alm(&almR_time, "ALM_R");
+
+
+#ifdef PID_TEST
+	pid_test_t++;
+	if(pid_test_t >= 125*3) //3 s
+	{
+		if(left_pid.desired_speed != -30)
+			left_pid.desired_speed = -30;
+		else
+			left_pid.desired_speed = -5;
+
+		if(right_pid.desired_speed != 30)
+			right_pid.desired_speed = 30;
+		else
+			right_pid.desired_speed = 5;
+
+		pid_test_t = 0;
 	}
 #endif
+
+	static uint8_t ticks = 0;
+	ticks++;
+
+	//effective frequency 125/5 = 25Hz because timer runs at 125Hz
+	if(ticks >= 5)
+	{
+		control_update();
+		ticks = 0;
+	}
 }
 
 void main_release(void)
