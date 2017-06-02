@@ -47,6 +47,8 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
   nh_private.param<float>("Kd", Ki, 0.5);
 
   serial_.setPort(port);
+  serial_.setRTS(false);
+  serial_.setDTR(false);
   serial_.setBaudrate(57600);
   try {
     serial_.open();
