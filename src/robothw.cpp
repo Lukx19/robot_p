@@ -47,8 +47,6 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
   nh_private.param<float>("Kd", Ki, 0.5);
 
   serial_.setPort(port);
-  serial_.setRTS(false);
-  serial_.setDTR(false);
   serial_.setBaudrate(57600);
   try {
     serial_.open();
@@ -59,6 +57,8 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
     ROS_ERROR_STREAM("ROBOT_P_CONTROL: Serial IO exception: " << e.what());
     return;
   }
+  serial_.setRTS(false);
+  serial_.setDTR(false);
   sendMsg(createStartMsg());
   sendMsg(createPIDMsg('P', Kp));
   sendMsg(createPIDMsg('I', Ki));
