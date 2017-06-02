@@ -1,12 +1,23 @@
 /*
  * robot_p_controller.c
  *
+ * full data sheet -> http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-42735-8-bit-AVR-Microcontroller-ATmega328-328P_Datasheet.pdf
+ * summary -> http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-42735-8-bit-AVR-Microcontroller-ATmega328-328P_Summary.pdf
+ * arduino nano pinout -> http://www.pighixxx.com/test/pinouts/boards/nano.pdf
+ * flashing .hex file -> https://forum.arduino.cc/index.php?topic=410618.0
+ * NOTE: base unit for atmel328P is 1 byte thus processor does not deal atomically for example with int type (there can be race condition between main loop and interrupt)
+ * NOTE: by default interrupt can not be interrupted by another one
  * Created: 18-May-17 4:16:35 PM
  * Author : petrg
  */ 
 
+ //TESTS
+//#define PID_TEST
+//#define TURN_TEST
+
 #define F_CPU 16000000LU
 #define USART_BAUDRATE 57600
+
 #include <util/delay.h>
 #include "pwm.h"
 #include "usart.h"
@@ -14,23 +25,27 @@
 #include "test.h"
 #include <string.h>
 #include <stdlib.h>
-
-//#define PID_TEST
-
 #include <avr/interrupt.h> 
 
-//full data sheet -> http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-42735-8-bit-AVR-Microcontroller-ATmega328-328P_Datasheet.pdf
-//summary -> http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-42735-8-bit-AVR-Microcontroller-ATmega328-328P_Summary.pdf
-//arduino nano pinout -> http://www.pighixxx.com/test/pinouts/boards/nano.pdf
-//flashing .hex file -> https://forum.arduino.cc/index.php?topic=410618.0
-//NOTE: base unit for atmel328P is 1 byte thus processor does not deal atomically for example with int type (there can be race condition between main loop and interrupt)
-//NOTE: by default interrupt can not be interrupted by another one
-
-pid_t left_pid, right_pid;
+volatile pid_t left_pid, right_pid;
+volatile uint8_t started = 0;
 
 //if the value is -1 alm is not up thus do not measure time
-int16_t almL_time = -1;
-int16_t almR_time = -1;
+volatile int16_t almL_time = -1;
+volatile int16_t almR_time = -1;
+
+volatile uint8_t usart_recv = 0;
+volatile uint8_t control = 0;
+
+#ifdef TURN_TEST
+volatile int16_t xxx = 0;
+#endif
+
+#ifdef PID_TEST
+volatile uint16_t pid_test_t = 0;
+#endif
+
+
 
 void pins_init(void)
 {
@@ -128,8 +143,8 @@ void send_steps(void)
 	uint8_t buffer[s];
 	usart_init_buffer(buffer, s);
 	buffer[0] = 'T';
-	*((speed_t*)&buffer[1]) = left_pid.current_steps;
-	*((speed_t*)&buffer[3]) = right_pid.current_steps;
+	*((speed_t*)&buffer[1]) = -right_pid.current_steps;
+	*((speed_t*)&buffer[3]) = left_pid.current_steps;
 	//TODO calculate CRC
 	
 	usart_send_buffer(buffer, s);
@@ -147,8 +162,6 @@ void loop_timer_stop(void)
 	//1024 prescaler
 	TCCR0B &= ~((1 << CS02)|(1 << CS01)|(1 << CS00));	
 }
-
-uint8_t started = 0;
 
 void start(void)
 {
@@ -190,52 +203,10 @@ void stop(void)
 	set_right_break(0);
 }
 
-ISR(PCINT0_vect)
+void usart_recv_message(void)
 {
-	if(!started)
-		return;
-
-	//start measure alm up time - if it is too long stop is called in timer interrupt
-	//if alm is changed to down -> stop timer by setting it to -1
-	//NOTE: "false" alm is not up even 1/125 of second => still alm up time out is set to 100 ms
-	if((PINB & (1 << PINB3)) == 0)
-	{
-		//usart_send_byte('L');
-		almL_time = 0;
-	}
-	else 
-	{
-		//usart_send_byte('X');
-		almL_time = -1;
-	}
-
-	if((PINB & (1 << PINB4)) == 0)
-	{
-		//usart_send_byte('R');
-		almR_time = 0;
-
-	}
-	else 
-	{
-		//usart_send_byte('Y');
-		almR_time = -1;
-	}
-}
-
-ISR(INT0_vect)
-{
-	pid_add_speed_tick(&left_pid);
-}
-
-ISR(INT1_vect)
-{
-	pid_add_speed_tick(&right_pid);
-}
-
-ISR(USART_RX_vect)
-{	
-	static uint8_t buffer[6];
-	static uint8_t i = 0;
+	volatile static uint8_t buffer[6];
+	volatile static uint8_t i = 0;
 	
 	buffer[i++] = usart_receive_byte();
 	
@@ -257,17 +228,11 @@ ISR(USART_RX_vect)
 				pid_d = *((speed_t*)&buffer[1]);
 				break;
 			case 'V':
-				left_pid.desired_speed = -*((speed_t*)&buffer[1]);
-				right_pid.desired_speed = *((speed_t*)&buffer[3]);
+				right_pid.desired_speed = *((speed_t*)&buffer[1]);
+				left_pid.desired_speed = -*((speed_t*)&buffer[3]);
 				break;
 			case 'S':
 				start();
-				//if(strncmp((char*)&buffer,"START", 5) == 0)
-				//{
-				//}
-				//else if(strncmp((char*)buffer,"STOP", 4) == 0)
-				//{				
-				//}
 				break;
 			case 'E':
 				stop();
@@ -297,7 +262,9 @@ void check_alm(int16_t* alm_time, char* alm_message)
 void control_update(void)
 {
 #ifndef PID_TEST
+#ifndef TURN_TEST
 		send_steps();
+#endif
 #else
 		usart_send_byte('S');
 		usart_send_byte('L');
@@ -344,15 +311,66 @@ void control_update(void)
 		
 }
 
-#ifdef PID_TEST
-uint16_t pid_test_t = 0;
+ISR(PCINT0_vect)
+{
+	if(!started)
+		return;
+
+	//start measure alm up time - if it is too long stop is called in timer interrupt
+	//if alm is changed to down -> stop timer by setting it to -1
+	//NOTE: "false" alm is not up even 1/125 of second => still alm up time out is set to 100 ms
+	if((PINB & (1 << PINB3)) == 0)
+	{
+		//usart_send_byte('L');
+		almL_time = 0;
+	}
+	else 
+	{
+		//usart_send_byte('X');
+		almL_time = -1;
+	}
+
+	if((PINB & (1 << PINB4)) == 0)
+	{
+		//usart_send_byte('R');
+		almR_time = 0;
+
+	}
+	else 
+	{
+		//usart_send_byte('Y');
+		almR_time = -1;
+	}
+}
+
+ISR(INT0_vect)
+{
+	pid_add_speed_tick(&left_pid);
+
+#ifdef TURN_TEST
+
+	xxx++;
+	if(xxx > 257)
+		left_pid.desired_speed = 0;
+
 #endif
+}
+
+ISR(INT1_vect)
+{
+	pid_add_speed_tick(&right_pid);
+}
+
+ISR(USART_RX_vect)
+{	
+	//usart_recv = 1;
+	usart_recv_message();
+}
 
 ISR(TIMER0_COMPA_vect)
 {
 	check_alm(&almL_time, "ALM_L");
 	check_alm(&almR_time, "ALM_R");
-
 
 #ifdef PID_TEST
 	pid_test_t++;
@@ -378,7 +396,7 @@ ISR(TIMER0_COMPA_vect)
 	//effective frequency 125/5 = 25Hz because timer runs at 125Hz
 	if(ticks >= 5)
 	{
-		control_update();
+		control = 1;
 		ticks = 0;
 	}
 }
@@ -389,13 +407,30 @@ void main_release(void)
 	pwm_16_init();
 	pins_init();
 	loop_timer_init();	
-	pid_init(&left_pid, DIRECTION_BACKWARD, -100, 100, 0);
-	pid_init(&right_pid, DIRECTION_FORWARD, -100, 100, 0);
+	int16_t t = 0;
+
+#ifdef TURN_TEST
+	t = 7;
+#endif
+
+	pid_init(&left_pid, DIRECTION_BACKWARD, -100, 100, -t);
+	pid_init(&right_pid, DIRECTION_FORWARD, -100, 100, t);
 	
 	sei();	
+	//start();
 	while(1)
 	{
+		if(control == 1)
+		{
+			control = 0;
+			control_update();
+		}
 
+		//if(usart_recv == 1)
+		//{
+			//usart_recv = 0;
+			//usart_recv_message();
+		//}
 	}
 }
 

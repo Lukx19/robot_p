@@ -24,7 +24,7 @@ typedef struct PID
 	uint8_t direction;
 	speed_t previous_error;
 	speed_t integral;
-	speed_t current_steps;
+	int8_t current_steps;
 	speed_t desired_speed;
 	speed_t min_output;
 	speed_t max_output;
@@ -71,6 +71,7 @@ speed_t pid_update(pid_t* data)
 	//const speed_t dt = 1; //assume one time unit 1/25 s
 	//thus dt is commented out in following code
 	speed_t current_speed = data->current_steps;// / dt;
+	data->current_steps = 0;
 	speed_t error = data->desired_speed - current_speed;
 
 #ifdef DETAIL
@@ -107,7 +108,6 @@ speed_t pid_update(pid_t* data)
 	output = max(min(output, data->max_output),data->min_output);
 	
 	data->previous_error = error;
-	data->current_steps = 0;
 	
 	return output;
 }
