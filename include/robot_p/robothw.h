@@ -85,8 +85,9 @@ private:
     const uint8_t* data = reinterpret_cast<const uint8_t*>(&msg);
     size_t size = sizeof(T);
     ROS_INFO_STREAM("sending size of mesasge " << size);
-    if (serial_.write(data, size) != size) {
-      ROS_WARN_STREAM("ROBOT_P_CONTROL: sending message was not successful");
+    size_t c = 0;
+    if ((c = serial_.write(data, size)) != size) {
+      ROS_WARN_STREAM("ROBOT_P_CONTROL: sending message was not successful " << c);
     }
   }
 };
