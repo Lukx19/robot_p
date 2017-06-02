@@ -3,7 +3,7 @@
 <group ns="robot_p">
   <include file="$(find robot_p)/launch/urdf.launch" />
 
-  <node pkg="robot_p" type="robot_control" name="robot_control">
+  <node pkg="robot_p" type="robot_control" name="robot_control" output="screen">
     <rosparam>
        ticks_per_revolution: 258
        serial_port: "/dev/ttyUSB1"
