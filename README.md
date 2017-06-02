@@ -35,7 +35,7 @@ left (right) driver sent ALM signal, controller is now in stopped state
 6 byte message
 
 ```
-[PID] <32 bit unsigned> <CRC-8>
+[PID] <16 bit unsigned> <CRC-8>
 
         float * 32 
 ```
@@ -48,7 +48,7 @@ V <16 bit signed> <16 bit signed> <CRC-8>
 
 
 ```
-STOP\0 <CRC-8>
+ETOP\0 <CRC-8>
 ```
 all timers stop and ENBL is set to 1 
 

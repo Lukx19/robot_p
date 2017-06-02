@@ -248,28 +248,29 @@ ISR(USART_RX_vect)
 		switch(buffer[0])
 		{
 			case 'P':
-				pid_p = *((uint32_t*)&buffer[1]);
+				pid_p = *((speed_t*)&buffer[1]);
 				break;
 			case 'I':
-				pid_i = *((uint32_t*)&buffer[1]);
+				pid_i = *((speed_t*)&buffer[1]);
 				break;
 			case 'D':
-				pid_d = *((uint32_t*)&buffer[1]);
+				pid_d = *((speed_t*)&buffer[1]);
 				break;
 			case 'V':
-				left_pid.desired_speed = *((int16_t*)&buffer[1]);
-				right_pid.desired_speed = *((int16_t*)&buffer[3]);
+				left_pid.desired_speed = -*((speed_t*)&buffer[1]);
+				right_pid.desired_speed = *((speed_t*)&buffer[3]);
 				break;
 			case 'S':
-				if(strncmp((char*)&buffer,"START", 5) == 0)
-				{
-					start();
-				}
-				else if(strncmp((char*)buffer,"STOP", 4) == 0)
-				{				
-					stop();
-				}
-				
+				start();
+				//if(strncmp((char*)&buffer,"START", 5) == 0)
+				//{
+				//}
+				//else if(strncmp((char*)buffer,"STOP", 4) == 0)
+				//{				
+				//}
+				break;
+			case 'E':
+				stop();
 				break;
 		}
 	}
@@ -388,8 +389,8 @@ void main_release(void)
 	pwm_16_init();
 	pins_init();
 	loop_timer_init();	
-	pid_init(&left_pid, DIRECTION_BACKWARD, -100, 100, -30);
-	pid_init(&right_pid, DIRECTION_FORWARD, -100, 100, 30);
+	pid_init(&left_pid, DIRECTION_BACKWARD, -100, 100, 0);
+	pid_init(&right_pid, DIRECTION_FORWARD, -100, 100, 0);
 	
 	sei();	
 	while(1)
