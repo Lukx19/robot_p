@@ -1,14 +1,16 @@
+#include <math.h>
 #include <robot_p/robothw.h>
 #include <boost/math/constants/constants.hpp>
+
 using namespace robotp;
 
 RobotHW::RobotHW(ros::NodeHandle &nh_private)
   : jnt_state_interface()
   , jnt_vel_interface()
   , serial_()
-  , max_wheel_velocity_(2)
-  , ticks_per_meter_(100)
+  , ticks_per_revolution_(258)
   , input_buff_()
+  , alarm_(false)
 
 {
   // connect and register the joint state interface
@@ -37,10 +39,7 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
   std::string port;
   float Kp, Ki, Kd;
 
-  nh_private.param<double>("ticks_per_meter", ticks_per_meter_, 100);
-  // radians/s
-  nh_private.param<double>("max_wheel_velocity", max_wheel_velocity_, 2);
-  max_wheel_velocity_ = std::abs(max_wheel_velocity_);
+  nh_private.param<double>("ticks_per_revolution", ticks_per_revolution_, 258);
 
   nh_private.param<std::string>("serial_port", port, "/dev/ttyS0");
   nh_private.param<float>("Kp", Kp, 1);
@@ -58,28 +57,39 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
     ROS_ERROR_STREAM("ROBOT_P_CONTROL: Serial IO exception: " << e.what());
     return;
   }
-
+  sendMsg(createStartMsg());
   sendMsg(createPIDMsg('P', Kp));
   sendMsg(createPIDMsg('I', Ki));
   sendMsg(createPIDMsg('D', Kd));
 }
 
+robotp::RobotHW::~RobotHW()
+{
+  sendMsg(createStopMsg());
+}
+
 void RobotHW::read(const ros::Time &time, const ros::Duration &period)
 {
-  size_t message_count = serial_.available() / 10;
+  const size_t MESSAGE_SIZE = 6;
+  size_t message_count = serial_.available() / MESSAGE_SIZE;
   std::array<double, 2> ticks = {0, 0};
   for (size_t i = 0; i < message_count; ++i) {
-    if (serial_.read(input_buff_.data(), 10) != 10) {
-      ROS_ERROR_STREAM(
-          "ROBOT_P_CONTROL:unable to read 10 byte message from serial "
-          "input");
+    if (serial_.read(input_buff_.data(), MESSAGE_SIZE) != MESSAGE_SIZE) {
+      ROS_ERROR_STREAM("ROBOT_P_CONTROL:unable to read "
+                       << MESSAGE_SIZE << " byte message from serial "
+                                          "input");
       return;
     }
-    InMsg *msg = reinterpret_cast<InMsg *>(input_buff_.data());
+    Msg32 *msg = reinterpret_cast<Msg32 *>(input_buff_.data());
     switch (msg->id) {
       case 'T':
-        ticks[0] += msg->left;
-        ticks[1] += msg->right;
+        // ticks per second
+        ticks[0] += msg->left * TICKS_TIME_MULTIPLIER;
+        ticks[1] += msg->right * TICKS_TIME_MULTIPLIER;
+        break;
+      case 'A':
+        ROS_WARN_STREAM("ROBOT_P_CONTROL: Alarm received in " << time);
+        alarm_ = true;
         break;
       default:
         ROS_ERROR_STREAM(
@@ -87,45 +97,68 @@ void RobotHW::read(const ros::Time &time, const ros::Duration &period)
         break;
     }
   }
-
+  // ticks/s to rad/s
+  double conversion = 2 * M_PI / ticks_per_revolution_;
   for (size_t i = 0; i < 2; ++i) {
-    pos_[i] = 0;
-    vel_[i] = (ticks[i] / ticks_per_meter_) / period.toSec();  // m/s
+    vel_[i] = ticks[i] * conversion;  // rad/s
+    pos_[i] += vel_[i] * period.toSec();
     eff_[i] = 0;
   }
+  ROS_INFO_STREAM("ROBOT_P_CONTROL: read -> speed [rad/s] L:"
+                  << vel_[0] << " R: " << vel_[1]);
+  ROS_INFO_STREAM("ROBOT_P_CONTROL: read -> position [rad] L:"
+                  << pos_[0] << " R: " << pos_[1]);
 }
 
 void RobotHW::write()
 {
-  sendMsg(createVelocityMsg(cmd_[0], cmd_[1]));
+  if (alarm_) {
+    sendMsg(createStartMsg());
+    alarm_ = false;
+  } else {
+    sendMsg(createVelocityMsg(cmd_[0], cmd_[1]));
+  }
 }
 
-robotp::RobotHW::OutMsg robotp::RobotHW::createPIDMsg(char letter,
-                                                      float data) const
+robotp::RobotHW::Msg32 robotp::RobotHW::createPIDMsg(char letter,
+                                                     float data) const
 {
-  OutMsg msg;
+  Msg32 msg;
   msg.id = letter;
-  msg.param = static_cast<uint32_t>(std::trunc(data * 100000));
+  msg.pid_param = static_cast<uint16_t>(std::trunc(data * FLOAT_MULTIPLIER));
+  msg.padding = 0;
   msg.crc = 0;
   return msg;
 }
 
-robotp::RobotHW::OutMsg
+robotp::RobotHW::Msg32
 robotp::RobotHW::createVelocityMsg(double left_vel, double right_vel) const
 {
-  OutMsg msg;
+  Msg32 msg;
   msg.id = 'V';
   msg.crc = 0;
-  auto calcVelocity = [this](double vel) -> int16_t {
-    double trunc_vel = std::abs(vel) > max_wheel_velocity_ ?
-                           max_wheel_velocity_ :
-                           std::abs(vel);
-    int16_t velocity = static_cast<int16_t>((trunc_vel / max_wheel_velocity_) *
-                                            VELOCITY_SCALE);
-    return vel < 0 ? velocity * -1 : velocity;
+  // rad/s to ticks/s
+  double conversion = ticks_per_revolution_ / 2 * M_PI;
+  auto calcVelocity = [this, conversion](double vel) -> int16_t {
+    return static_cast<int16_t>(std::round(vel * conversion)) /
+           TICKS_TIME_MULTIPLIER;
   };
 
   msg.left = calcVelocity(left_vel);
   msg.right = calcVelocity(right_vel);
+  return msg;
+}
+
+robotp::RobotHW::Msg32 robotp::RobotHW::createStartMsg() const
+{
+  Msg32 msg;
+  msg.id = 'S';
+  return msg;
+}
+
+robotp::RobotHW::Msg32 robotp::RobotHW::createStopMsg() const
+{
+  Msg32 msg;
+  msg.id = 'E';
   return msg;
 }

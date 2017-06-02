@@ -10,8 +10,6 @@ find_package(catkin REQUIRED COMPONENTS
   serial
 )
 
-find_package(Boost COMPONENTS system thread)
-
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################

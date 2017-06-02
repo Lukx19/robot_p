@@ -5,12 +5,12 @@
 #include <chrono>
 #include <thread>
 
-void controlThread(ros::Rate rate, robotp::RobotHW* robot,
-                   controller_manager::ControllerManager& cm)
+void controlThread(ros::NodeHandle* nh, ros::Rate rate, robotp::RobotHW* robot,
+                   controller_manager::ControllerManager* cm)
 {
   auto last_time = std::chrono::steady_clock::now();
 
-  while (ros::ok()) {
+  while (nh->ok()) {
     // Calculate monotonic time elapsed
     auto this_time = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_duration = this_time - last_time;
@@ -20,7 +20,7 @@ void controlThread(ros::Rate rate, robotp::RobotHW* robot,
 
     // read odom from encoder
     robot->read(ros::Time::now(), elapsed);
-    cm.update(ros::Time::now(), elapsed);
+    cm->update(ros::Time::now(), elapsed);
     // execute movement
     robot->write();
     rate.sleep();
@@ -38,11 +38,11 @@ int main(int argc, char* argv[])
 
   controller_manager::ControllerManager cm(robot.get(), controller_nh);
 
-  std::thread control_loop(controlThread, ros::Rate(50), robot.get(),
-                           std::ref(cm));
+  std::thread control_loop(controlThread, &controller_nh, ros::Rate(50),
+                           robot.get(), &cm);
 
   // Foreground ROS spinner for ROS callbacks
-  while (ros::ok()) {
+  while (controller_nh.ok()) {
     ros::spinOnce();
   }
   control_loop.join();
