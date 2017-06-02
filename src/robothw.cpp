@@ -86,7 +86,7 @@ void RobotHW::read(const ros::Time &time, const ros::Duration &period)
         // ticks per second
         ticks[0] += static_cast<double>(msg->left) * TICKS_TIME_MULTIPLIER;
         ticks[1] += static_cast<double>(msg->right) * TICKS_TIME_MULTIPLIER;
-        ROS_INFO_STREAM("msg: " << msg.left << " " << msg.right);
+        ROS_INFO_STREAM("msg: " << msg->left << " " << msg->right);
         break;
       case 'A':
         ROS_WARN_STREAM("ROBOT_P_CONTROL: Alarm received in " << time);
