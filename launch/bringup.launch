@@ -1,8 +1,17 @@
 <launch>
-<group ns="robot_p">
-<include file="$(find robot_p)/launch/urdf.launch" />
 
-  <node pkg="robot_p" type="robot_control" name="robot_control" />
+<group ns="robot_p">
+  <include file="$(find robot_p)/launch/urdf.launch" />
+
+  <node pkg="robot_p" type="robot_control" name="robot_control">
+    <rosparam>
+       ticks_per_revolution: 258
+       serial_port: "/dev/ttyUSB1"
+       Kp: 1.56
+       Ki: 0.71
+       Kd: 0.125
+    </rosparam>
+  </node>
 
   <rosparam command="load" file="$(find robot_p)/config/control.yaml" />
 

@@ -1,21 +1,20 @@
 #include <controller_manager/controller_manager.h>
 #include <robot_p/robothw.h>
 #include <ros/ros.h>
-#include <boost/chrono.hpp>
-#include <boost/thread.hpp>
 
-typedef boost::chrono::steady_clock time_source;
+#include <chrono>
+#include <thread>
 
-void controlThread(ros::NodeHandle* controller_nh, ros::Rate rate,
-                   robotp::RobotHW* robot,
+void controlThread(ros::NodeHandle* nh, ros::Rate rate, robotp::RobotHW* robot,
                    controller_manager::ControllerManager* cm)
 {
-  time_source::time_point last_time = time_source::now();
+  auto last_time = std::chrono::steady_clock::now();
 
-  while (1) {
+  while (nh->ok()) {
     // Calculate monotonic time elapsed
-    time_source::time_point this_time = time_source::now();
-    boost::chrono::duration<double> elapsed_duration = this_time - last_time;
+    auto this_time = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed_duration = this_time - last_time;
+
     ros::Duration elapsed(elapsed_duration.count());
     last_time = this_time;
 
@@ -23,7 +22,7 @@ void controlThread(ros::NodeHandle* controller_nh, ros::Rate rate,
     robot->read(ros::Time::now(), elapsed);
     cm->update(ros::Time::now(), elapsed);
     // execute movement
-    robot->write(ros::Time::now(), elapsed);
+    robot->write();
     rate.sleep();
   }
 }
@@ -31,17 +30,22 @@ void controlThread(ros::NodeHandle* controller_nh, ros::Rate rate,
 int main(int argc, char* argv[])
 {
   // Initialize ROS node.
-  ros::init(argc, argv, "robot_p_node");
-  robotp::RobotHW robot;
+  ros::init(argc, argv, "robot_p_control");
+  ros::NodeHandle controller_nh;
+  ros::NodeHandle nh_private("~");
 
-  // Background thread for the controls callback.
-  ros::NodeHandle controller_nh("");
-  controller_manager::ControllerManager cm(&robot, controller_nh);
-  boost::thread(
-      boost::bind(controlThread, &controller_nh, ros::Rate(50), &robot, &cm));
+  std::unique_ptr<robotp::RobotHW> robot(new robotp::RobotHW(nh_private));
+
+  controller_manager::ControllerManager cm(robot.get(), controller_nh);
+
+  std::thread control_loop(controlThread, &controller_nh, ros::Rate(50),
+                           robot.get(), &cm);
 
   // Foreground ROS spinner for ROS callbacks
-  ros::spin();
+  while (controller_nh.ok()) {
+    ros::spinOnce();
+  }
+  control_loop.join();
 
   return 0;
 }
