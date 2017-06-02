@@ -7,9 +7,9 @@
     <rosparam>
        ticks_per_revolution: 258
        serial_port: "/dev/tty/usb1"
-       Kp:1.56
-       Ki:0.71
-       Kd:0.125
+       Kp: 1.56
+       Ki: 0.71
+       Kd: 0.125
     </rosparam>
   </node>
 
