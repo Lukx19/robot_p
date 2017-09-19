@@ -1,7 +1,7 @@
 <launch>
 
 <group ns="robot_p">
-  <include file="$(find robot_p)/launch/urdf.launch" />
+  <!-- <include file="$(find robot_p)/launch/urdf.launch" /> -->
 
   <node pkg="robot_p" type="robot_control" name="robot_control" output="screen">
     <rosparam>
