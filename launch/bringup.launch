@@ -10,6 +10,7 @@
        Kp: 1.56
        Ki: 0.71
        Kd: 0.125
+       controller_rate: 1
     </rosparam>
   </node>
 

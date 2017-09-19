@@ -34,11 +34,14 @@ int main(int argc, char* argv[])
   ros::NodeHandle controller_nh;
   ros::NodeHandle nh_private("~");
 
+  int rate = 0;
+  nh_private.param<int>("controller_rate", rate, 1);
+
   std::unique_ptr<robotp::RobotHW> robot(new robotp::RobotHW(nh_private));
 
   controller_manager::ControllerManager cm(robot.get(), controller_nh);
 
-  std::thread control_loop(controlThread, &controller_nh, ros::Rate(50),
+  std::thread control_loop(controlThread, &controller_nh, ros::Rate(rate),
                            robot.get(), &cm);
 
   // Foreground ROS spinner for ROS callbacks
