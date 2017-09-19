@@ -118,8 +118,10 @@ robotp::RobotHW::createVelocityMsg(double left_vel, double right_vel) const
            TICKS_TIME_MULTIPLIER;
   };
 
-  msg.left = calcVelocity(left_vel);
-  msg.right = calcVelocity(right_vel);
+  // msg.left = calcVelocity(left_vel);
+  // msg.right = calcVelocity(right_vel);
+  msg.left = 255;
+  msg.right = 255;
   ROS_INFO_STREAM("ROBOT_P_CONTROL: speed: " << msg.left << " " << msg.right);
   return msg;
 }
@@ -133,7 +135,5 @@ robotp::RobotHW::Msg32 robotp::RobotHW::createStartMsg() const
 
 robotp::RobotHW::Msg32 robotp::RobotHW::createStopMsg() const
 {
-  Msg32 msg;
-  msg.id = 'E';
-  return msg;
+  return createVelocityMsg(0, 0);
 }
