@@ -53,7 +53,7 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
   serial_.setTimeout(timeout);
   try {
     serial_.open();
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     ROS_ERROR_STREAM("[ROBOTHW]: Serial exception: " << e.what());
     return;
   }
@@ -120,6 +120,7 @@ robotp::RobotHW::createVelocityMsg(double left_vel, double right_vel) const
 
   msg.left = calcVelocity(left_vel);
   msg.right = calcVelocity(right_vel);
+  ROS_INFO_STREAM("ROBOT_P_CONTROL: speed: " << msg.left << " " << msg.right);
   return msg;
 }
 
