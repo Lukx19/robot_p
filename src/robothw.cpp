@@ -47,18 +47,15 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
   nh_private.param<float>("Kd", Ki, 0.5);
 
   serial_.setPort(port);
-  serial_.setBaudrate(57600);
+  serial_.setBaudrate(115200);
   try {
     serial_.open();
-  } catch (serial::SerialException e) {
+  } catch (const std::exception& e) {
     ROS_ERROR_STREAM("[ROBOTHW]: Serial exception: " << e.what());
     return;
-  } catch (serial::IOException e) {
-    ROS_ERROR_STREAM("ROBOT_P_CONTROL: Serial IO exception: " << e.what());
-    return;
   }
-  serial_.setRTS(false);
-  serial_.setDTR(false);
+  // serial_.setRTS(false);
+  // serial_.setDTR(false);
   sendMsg(createStartMsg());
   sendMsg(createPIDMsg('P', Kp));
   sendMsg(createPIDMsg('I', Ki));
@@ -72,45 +69,16 @@ robotp::RobotHW::~RobotHW()
 
 void RobotHW::read(const ros::Time &time, const ros::Duration &period)
 {
-  const size_t MESSAGE_SIZE = 6;
-  size_t message_count = serial_.available() / MESSAGE_SIZE;
-  std::array<double, 2> ticks = {0, 0};
-  for (size_t i = 0; i < message_count; ++i) {
-    if (serial_.read(input_buff_.data(), MESSAGE_SIZE) != MESSAGE_SIZE) {
-      ROS_ERROR_STREAM("ROBOT_P_CONTROL:unable to read "
-                       << MESSAGE_SIZE << " byte message from serial "
-                                          "input");
-      return;
-    }
-    Msg32 *msg = reinterpret_cast<Msg32 *>(input_buff_.data());
-    switch (msg->id) {
-      case 'T':
-        // ticks per second
-        ticks[0] += static_cast<double>(msg->left) * TICKS_TIME_MULTIPLIER;
-        ticks[1] += static_cast<double>(msg->right) * TICKS_TIME_MULTIPLIER;
-        ROS_INFO_STREAM("msg: " << msg->left << " " << msg->right);
-        break;
-      case 'A':
-        ROS_WARN_STREAM("ROBOT_P_CONTROL: Alarm received in " << time);
-        alarm_ = true;
-        break;
-      default:
-        ROS_ERROR_STREAM(
-            "ROBOT_P_CONTROL: Unknown input message type: " << msg->id);
-        break;
-    }
+  if (serial_.available() > 0) {
+    ROS_INFO_STREAM(
+        "ROBOT_P_CONTROL: serial: " << serial_.read(serial_.available()));
   }
-  // ticks/s to rad/s
-  double conversion = 2 * M_PI / ticks_per_revolution_;
+
   for (size_t i = 0; i < 2; ++i) {
-    vel_[i] = ticks[i] * conversion;  // rad/s
-    pos_[i] += vel_[i] * period.toSec();
+    vel_[i] = 0;  // rad/s
+    pos_[i] += 0;
     eff_[i] = 0;
   }
-  ROS_INFO_STREAM("ROBOT_P_CONTROL: read -> speed [rad/s] L:"
-                  << vel_[0] << " R: " << vel_[1]);
-  ROS_INFO_STREAM("ROBOT_P_CONTROL: read -> position [rad] L:"
-                  << pos_[0] << " R: " << pos_[1]);
 }
 
 void RobotHW::write()
