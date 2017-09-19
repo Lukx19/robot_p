@@ -48,6 +48,8 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
 
   serial_.setPort(port);
   serial_.setBaudrate(115200);
+  auto timeout = serial::Timeout::simpleTimeout(serial::Timeout::max());
+  serial_.setTimeout(timeout);
   try {
     serial_.open();
   } catch (const std::exception& e) {
