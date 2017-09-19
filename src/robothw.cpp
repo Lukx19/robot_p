@@ -86,12 +86,7 @@ void RobotHW::read(const ros::Time &time, const ros::Duration &period)
 
 void RobotHW::write()
 {
-  if (alarm_) {
-    sendMsg(createStartMsg());
-    alarm_ = false;
-  } else {
-    sendMsg(createVelocityMsg(cmd_[0], cmd_[1]));
-  }
+  sendMsg(createVelocityMsg(cmd_[0], cmd_[1]));
 }
 
 robotp::RobotHW::Msg32 robotp::RobotHW::createPIDMsg(char letter,
@@ -111,17 +106,15 @@ robotp::RobotHW::createVelocityMsg(double left_vel, double right_vel) const
   Msg32 msg;
   msg.id = 'V';
   msg.crc = 0;
-  // rad/s to ticks/s
-  double conversion = ticks_per_revolution_ / 2 * M_PI;
-  auto calcVelocity = [this, conversion](double vel) -> int16_t {
-    return static_cast<int16_t>(std::round(vel * conversion)) /
-           TICKS_TIME_MULTIPLIER;
-  };
+  // speed in rad/s
+  if (left_vel > 0 || right_vel > 0) {
+    msg.left = 255;
+    msg.right = 255;
+  } else {
+    msg.left = 0;
+    msg.right = 0;
+  }
 
-  // msg.left = calcVelocity(left_vel);
-  // msg.right = calcVelocity(right_vel);
-  msg.left = 255;
-  msg.right = 255;
   ROS_INFO_STREAM("ROBOT_P_CONTROL: speed: " << msg.left << " " << msg.right);
   return msg;
 }
