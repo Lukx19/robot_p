@@ -47,7 +47,8 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
   nh_private.param<float>("Kd", Ki, 0.5);
 
   serial_.setPort(port);
-  serial_.setBaudrate(115200);
+  // serial_.setBaudrate(115200);
+  serial_.setBaudrate(57600);
   auto timeout = serial::Timeout::simpleTimeout(serial::Timeout::max());
   serial_.setTimeout(timeout);
   try {
