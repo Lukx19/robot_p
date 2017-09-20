@@ -61,12 +61,12 @@ robotp::RobotHW::~RobotHW()
 
 void RobotHW::read(const ros::Time &time, const ros::Duration &period)
 {
-  // we don't read odom from controller
   if (serial_.available() > 0) {
     ROS_INFO_STREAM(
         "ROBOT_P_CONTROL: serial: " << serial_.read(serial_.available()));
   }
 
+  // we don't read odom from controller
   for (size_t i = 0; i < 2; ++i) {
     vel_[i] = 0;  // rad/s
     pos_[i] += 0;
@@ -97,6 +97,6 @@ robotp::RobotHW::createVelocityMsg(double left_vel, double right_vel) const
   msg.left = radiansToPWM(left_vel);
   msg.right = radiansToPWM(right_vel);
 
-  ROS_INFO_STREAM("ROBOT_P_CONTROL: speed: " << msg.left << " " << msg.right);
+  ROS_DEBUG_STREAM("ROBOT_P_CONTROL: speed: " << msg.left << " " << msg.right);
   return msg;
 }
