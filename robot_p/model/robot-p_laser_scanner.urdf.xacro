@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
   <link name="laser_scanner">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <mass value="0.56"/>
+      <inertia ixx="0.004878" ixy="-6.2341e-07" ixz="-7.4538e-07" iyy="0.00090164" iyz="-0.00014394" izz="0.0042946"/>
+    </inertial>
     <visual>
       <geometry>
         <box size="0.1 .07 .06"/>
@@ -10,6 +15,11 @@
       </material>
       <origin xyz="0 0 0"/>
     </visual>
+    <collision>
+      <geometry>
+        <box size="0.1 .07 .06"/>
+      </geometry>
+    </collision>
   </link>
   <joint name="laser_pillar_to_laser_scanner" type="fixed">
     <origin xyz="0.0 0 0.06"/>
@@ -17,6 +27,11 @@
     <child link="laser_scanner"/>
   </joint>
   <link name="laser_pillar">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <mass value="0.56"/>
+      <inertia ixx="0.004878" ixy="-6.2341e-07" ixz="-7.4538e-07" iyy="0.00090164" iyz="-0.00014394" izz="0.0042946"/>
+    </inertial>
     <visual>
       <geometry>
         <box size="0.1 .07 .06"/>
@@ -26,6 +41,11 @@
       </material>
       <origin xyz="0 0 0"/>
     </visual>
+    <collision>
+      <geometry>
+        <box size="0.1 .07 .06"/>
+      </geometry>
+    </collision>
   </link>
   <joint name="base_to_laser_pillar" type="fixed">
     <origin xyz="0.075 0 0.09"/>

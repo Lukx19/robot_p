@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
   <link name="front_left_wheel">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <mass value="0.56"/>
+      <inertia ixx="0.004878" ixy="-6.2341e-07" ixz="-7.4538e-07" iyy="0.00090164" iyz="-0.00014394" izz="0.0042946"/>
+    </inertial>
     <visual>
       <geometry>
         <cylinder length="0.05" radius="0.105"/>
@@ -10,13 +15,25 @@
       </material>
       <origin xyz="0 0 0" rpy="${-3.1415927/2.0} 0 0" />
     </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="${-3.1415927/2.0} 0 0" />
+      <geometry>
+        <cylinder length="0.05" radius="0.105"/>
+      </geometry>
+    </collision>
   </link>
-  <joint name="base_to_front_left_wheel" type="fixed">
+  <joint name="base_to_front_left_wheel" type="continuous">
     <origin xyz="0.07 0.175 -0.075"/>
+    <axis xyz="0 1 0" />
     <parent link="base_link"/>
     <child link="front_left_wheel"/>
   </joint>
   <link name="front_right_wheel">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <mass value="0.56"/>
+      <inertia ixx="0.004878" ixy="-6.2341e-07" ixz="-7.4538e-07" iyy="0.00090164" iyz="-0.00014394" izz="0.0042946"/>
+    </inertial>
     <visual>
       <geometry>
         <cylinder length="0.05" radius="0.105"/>
@@ -26,8 +43,15 @@
       </material>
       <origin xyz="0 0 0" rpy="${-3.1415927/2.0} 0 0" />
     </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="${-3.1415927/2.0} 0 0" />
+      <geometry>
+        <cylinder length="0.05" radius="0.105"/>
+      </geometry>
+    </collision>
   </link>
-  <joint name="base_to_right_left_wheel" type="fixed">
+  <joint name="base_to_right_left_wheel" type="continuous">
+    <axis xyz="0 -1 0" />
     <origin xyz="0.07 -0.175 -0.075"/>
     <parent link="base_link"/>
     <child link="front_right_wheel"/>
