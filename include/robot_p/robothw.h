@@ -60,24 +60,18 @@ public:
 private:
   const size_t LEFT = 0;
   const size_t RIGHT = 1;
-  const size_t FLOAT_MULTIPLIER = 32;
-  const size_t TICKS_TIME_MULTIPLIER = 25;
   const static constexpr size_t VELOCITY_SCALE = 255;
   hardware_interface::JointStateInterface jnt_state_interface;
   hardware_interface::VelocityJointInterface jnt_vel_interface;
   serial::Serial serial_;
-  double ticks_per_revolution_;
+  double full_speed_;
   std::array<uint8_t, 10> input_buff_;
   double cmd_[2];
   double pos_[2];
   double vel_[2];
   double eff_[2];
-  bool alarm_;
 
-  Msg32 createPIDMsg(char letter, float data) const;
   Msg32 createVelocityMsg(double left_vel, double right_vel) const;
-  Msg32 createStartMsg() const;
-  Msg32 createStopMsg() const;
 
   template <typename T>
   void sendMsg(const T& msg)

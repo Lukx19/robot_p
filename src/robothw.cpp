@@ -8,9 +8,8 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
   : jnt_state_interface()
   , jnt_vel_interface()
   , serial_()
-  , ticks_per_revolution_(258)
+  , full_speed_(0)
   , input_buff_()
-  , alarm_(false)
 
 {
   // connect and register the joint state interface
@@ -37,18 +36,14 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
 
   // initialize parameters
   std::string port;
-  float Kp, Ki, Kd;
+  int serial_baudrate = 0;
 
-  nh_private.param<double>("ticks_per_revolution", ticks_per_revolution_, 258);
-
+  nh_private.param<double>("full_speed", full_speed_, 3.14);
   nh_private.param<std::string>("serial_port", port, "/dev/ttyS0");
-  nh_private.param<float>("Kp", Kp, 1);
-  nh_private.param<float>("Ki", Kd, 0.3);
-  nh_private.param<float>("Kd", Ki, 0.5);
+  nh_private.param<int>("serial_baudrate", serial_baudrate, 57600);
 
   serial_.setPort(port);
-  // serial_.setBaudrate(115200);
-  serial_.setBaudrate(57600);
+  serial_.setBaudrate(serial_baudrate);
   auto timeout = serial::Timeout::simpleTimeout(serial::Timeout::max());
   serial_.setTimeout(timeout);
   try {
@@ -57,21 +52,16 @@ RobotHW::RobotHW(ros::NodeHandle &nh_private)
     ROS_ERROR_STREAM("[ROBOTHW]: Serial exception: " << e.what());
     return;
   }
-  // serial_.setRTS(false);
-  // serial_.setDTR(false);
-  sendMsg(createStartMsg());
-  sendMsg(createPIDMsg('P', Kp));
-  sendMsg(createPIDMsg('I', Ki));
-  sendMsg(createPIDMsg('D', Kd));
 }
 
 robotp::RobotHW::~RobotHW()
 {
-  sendMsg(createStopMsg());
+  sendMsg(createVelocityMsg(0., 0.));
 }
 
 void RobotHW::read(const ros::Time &time, const ros::Duration &period)
 {
+  // we don't read odom from controller
   if (serial_.available() > 0) {
     ROS_INFO_STREAM(
         "ROBOT_P_CONTROL: serial: " << serial_.read(serial_.available()));
@@ -89,15 +79,12 @@ void RobotHW::write()
   sendMsg(createVelocityMsg(cmd_[0], cmd_[1]));
 }
 
-robotp::RobotHW::Msg32 robotp::RobotHW::createPIDMsg(char letter,
-                                                     float data) const
+inline static int radiansToPWM(double vel)
 {
-  Msg32 msg;
-  msg.id = letter;
-  msg.pid_param = static_cast<uint16_t>(std::trunc(data * FLOAT_MULTIPLIER));
-  msg.padding = 0;
-  msg.crc = 0;
-  return msg;
+  double speed_factor = vel / full_speed;
+  int pwm = (int)(speed_factor * 255);
+  // ensure to stay in boundaries
+  return std::max(std::min(pwm, 255), -255);
 }
 
 robotp::RobotHW::Msg32
@@ -106,27 +93,10 @@ robotp::RobotHW::createVelocityMsg(double left_vel, double right_vel) const
   Msg32 msg;
   msg.id = 'V';
   msg.crc = 0;
-  // speed in rad/s
-  if (left_vel > 0 || right_vel > 0) {
-    msg.left = 255;
-    msg.right = 255;
-  } else {
-    msg.left = 0;
-    msg.right = 0;
-  }
+  // input speeds are in rad/s
+  msg.left = radiansToPWM(left_vel);
+  msg.right = radiansToPWM(right_vel);
 
   ROS_INFO_STREAM("ROBOT_P_CONTROL: speed: " << msg.left << " " << msg.right);
   return msg;
-}
-
-robotp::RobotHW::Msg32 robotp::RobotHW::createStartMsg() const
-{
-  Msg32 msg;
-  msg.id = 'S';
-  return msg;
-}
-
-robotp::RobotHW::Msg32 robotp::RobotHW::createStopMsg() const
-{
-  return createVelocityMsg(0, 0);
 }

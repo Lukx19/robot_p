@@ -4,12 +4,10 @@
   <!-- <include file="$(find robot_p)/launch/urdf.launch" /> -->
 
   <node pkg="robot_p" type="robot_control" name="robot_control" output="screen">
+    <!-- full_speed: rad/s wheel speed on full PWM -->
     <rosparam>
-       ticks_per_revolution: 258
+       full_speed: 9.2363
        serial_port: "/dev/serial/by-id/usb-1a86_USB2.0-Serial-if00-port0"
-       Kp: 1.56
-       Ki: 0.71
-       Kd: 0.125
        controller_rate: 1
     </rosparam>
   </node>
