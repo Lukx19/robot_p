@@ -36,7 +36,7 @@ Labels in red describe pin connected with drivers.
 
 Labels in green font or box describe demo controller pins connected with drivers. (relevant for demo controller)
 
-![pinout](./robot_p_controller/robot_p_controller/pinout.png "Pinout")
+![pinout](./robot_p_controller/robot_p_controller/pinoutx.png "Pinout")
 
 
 
