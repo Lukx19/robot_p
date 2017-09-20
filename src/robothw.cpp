@@ -81,7 +81,7 @@ void RobotHW::write()
 
 inline static int radiansToPWM(double vel)
 {
-  double speed_factor = vel / full_speed;
+  double speed_factor = vel / full_speed_;
   int pwm = (int)(speed_factor * 255);
   // ensure to stay in boundaries
   return std::max(std::min(pwm, 255), -255);
