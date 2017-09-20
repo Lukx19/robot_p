@@ -3,17 +3,55 @@ robot_p
 
 ROS software stack for a custom robot
 
-
-controller
+URDF
 ----------
-communicates via serial
+
+TODO
+
+ROS control
+----------
+
+TODO
+
+Controller
+----------
+
+
+### demo_controller (in use)
+
+This controller is writen in Arduino and is currently in use.  Controller periodically reads messages from ROS containing pwm power in range [-255;255]. Appropriate pwm and forward / rear signal is then generated to motor drivers. Sources are located in demo_controller folder.
+
+### robot_p_controller (future use)
+
+This controller is written directly in AVR and supports all features of motor drivers. Nevertheless motor drivers generate SPEED signals in too high frequency thus controller is not able to read all of them. This implementation is thus meant for future development - hardware solution to decrease frequency of SPEED signal is needed. Sources are located in robot_p_controller folder.
+
+### Documentation
+
+Following sections are meant essentially for robot_p controller. If content is relevant also for demo controller it is directly specified.
+
+
+#### Pinout
+
+Labels in red describe pin connected with drivers.
+
+Labels in green font or box describe demo controller pins connected with drivers. (relevant for demo controller)
+
+![pinout](./robot_p_controller/robot_p_controller/pinout.png "Pinout")
+
+
+
+#### Serial configuration
+
+Valid also for demo controller.
+
+ROS communicates with controller via serial with following configuration.
 - 57600 BAUD
 - 8 data bits
 - none parity
 - 1 stop bit
 - none handshaking
 
-### INPUT ROS (OUTPUT controller)
+#### INPUT ROS (OUTPUT controller)
 
 6 byte message
 
@@ -30,7 +68,7 @@ ALM_R <CRC-8>
 ```
 left (right) driver sent ALM signal, controller is now in stopped state
 
-### OUTPUT ROS (INPUT controller)
+#### OUTPUT ROS (INPUT controller)
 
 6 byte message
 
@@ -45,8 +83,11 @@ V <16 bit signed> <16 bit signed> <CRC-8>
 
    left wheel       right wheel
 
-   values are in the range [-255,255]
 ```
+   demo controller: values are in the range [-255,255] (valid also for demo controller)
+
+   robot_p controller: values are speed in ticks per iteration (because of PID controller)
+
 
 
 ```
@@ -54,13 +95,25 @@ ETOP\0 <CRC-8>
 ```
 all timers stop and ENBL is set to 1 
 
+
 ```
 START <CRC-8>
 ```
 all timers start and ENBL is set to 0 
 
-### Documentation
-Since base unit for atmel328P is 1 byte processor can not deal for example with int atomically. Thus there can be race condition between main "thread" and interrupts. By default interupts can not be interrupted by another one. Interrupts are waiting until they are processed. 
+this message has to be sent before any other
+
+#### Atmega328P notes
+
+- Since base unit for atmel328P is 1 byte processor can not deal for example with int atomically. Thus there can be race condition between main loop and interrupts. By default interupts can not be interrupted by another one. Interrupts are waiting until they are processed. 
+
+- full data sheet -> http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-42735-8-bit-AVR-Microcontroller-ATmega328-328P_Datasheet.pdf
+
+- summary -> http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-42735-8-bit-AVR-Microcontroller-ATmega328-328P_Summary.pdf
+
+- arduino nano pinout -> http://www.pighixxx.com/test/pinouts/boards/nano.pdf
+
+- flashing .hex file -> https://forum.arduino.cc/index.php?topic=410618.0
 
 
 #### Timers
@@ -86,12 +139,6 @@ To let this work there has to be created external pull ups by connecting desired
 Value change interrupt can be set to almost all pins. Nevertheless this method is less user friendly, because you have to manually determine whether some pins are changed or not. This method is used for pins PB3/4 to detect ALM signal.
 
 
-#### Pinout
-
-Labels in red describe pin connected with drivers.
-
-![pinout](./robot_p_controller/robot_p_controller/pinout.png "Pinout")
-
 #### PID
 
 *   P,I,D variables are multipled by 32 thus in PID algorithm divided by 32=2^5 (shift can be used instead)
@@ -105,6 +152,8 @@ speed_t pid_p = 50; //effectively 1.56
 speed_t pid_i = 23; //effectively 0.71
 speed_t pid_d = 4; //effectively 0.125
 ```
+##### PID tests
+
 PID behaivour with top speed:
 
 ![pinout](./robot_p_controller/pid_test/p23L.png "left wheel")
