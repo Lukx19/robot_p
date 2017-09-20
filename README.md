@@ -22,7 +22,7 @@ T <16 bit signed> <16 bit signed> <CRC-8>
 
   left wheel        right wheel
 ```
-ticks from previous message - one turn should have 257.8 ticks
+ticks from previous message 
 
 ```
 ALM_L <CRC-8>
@@ -60,7 +60,6 @@ all timers start and ENBL is set to 0
 ### Documentation
 Since base unit for atmel328P is 1 byte processor can not deal for example with int atomically. Thus there can be race condition between main "thread" and interrupts. By default interupts can not be interrupted by another one. Interrupts are waiting until they are processed. 
 
-There is basically no code in main "thread" unless initialization. All the job is done in interrupts from timers, usart or pin value change interrupts. Thus there should not be danger of race conditions.
 
 #### Timers
 Controller uses following two timers:
@@ -71,6 +70,25 @@ Controller uses following two timers:
    *   PID update computation
    *   rotation direction set according to PID output
    *   PWM duty cycle updated according to PID output
+
+
+#### Usart
+All reception is done in reception interrupt thus there is no active wating for incoming messages. Transmisson method call is always "synchronous". (whole message has to be sent to leave function)
+
+#### External interrupts
+There are two pins INT0/1 allowing to call interrupt when pin value is changed. These two pins are connected to SPEED signals and interrupt event is set to raising edge. 
+
+To let this work there has to be created external pull ups by connecting desired pin and 5V using resistor!
+
+#### Other External interrupts
+Value change interrupt can be set to almost all pins. Nevertheless this method is less user friendly, because you have to manually determine whether some pins are changed or not. This method is used for pins PB3/4 to detect ALM signal.
+
+
+#### Pinout
+
+Labels in red describe pin connected with drivers.
+
+![pinout](./robot_p_controller/robot_p_controller/pinout.png "Pinout")
 
 #### PID
 
@@ -96,15 +114,3 @@ PID behaivour when changing top speed to slow speed every 3 seconds:
 ![pinout](./robot_p_controller/pid_test/p3R.png "right wheel")
 
 
-#### Usart
-All reception is done in reception interrupt thus there is no active wating for incoming messages. Transmisson method call is always "synchronous". (whole message has to be sent to leave function)
-
-#### Simple External interrupts
-There are two pins INT0/1 allowing to call interrupt when pin value is changed. These two pins are connected to SPEED signals and interrupt event is set to raising edge.
-
-#### Other External interrupts
-Value change interrupt can be set to almost all pins. Nevertheless this method is less user friendly, because you have to manually determine whether some pins are changed or not. This method is used for pins PB3/4 to detect ALM signal.
-
-
-#### Pinout
-![pinout](./robot_p_controller/robot_p_controller/pinout.png "Pinout")
