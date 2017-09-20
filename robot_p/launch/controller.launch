@@ -1,8 +1,6 @@
 <launch>
 
 <group ns="robot_p">
-  <!-- <include file="$(find robot_p)/launch/urdf.launch" /> -->
-
   <node pkg="robot_p" type="robot_control" name="robot_control" output="screen">
     <!-- full_speed: rad/s wheel speed on full PWM -->
     <rosparam>
@@ -18,6 +16,6 @@
   <node name="controller_spawner" pkg="controller_manager" type="spawner"
         args=" robot_p_diff_drive_controller --shutdown-timeout 1" />
 
-  <remap from="/robot_p/robot_p_diff_drive_controller/cmd_vel" to="/cmd_vel"/>
+  <!-- <remap from="/robot_p/robot_p_diff_drive_controller/cmd_vel" to="/cmd_vel"/> -->
 </group>
 </launch>

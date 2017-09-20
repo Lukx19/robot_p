@@ -1,4 +1,8 @@
 <launch>
+	<!-- robot urdf model -->
+	<include file="$(find robot_p)/launch/urdf.launch" />
+	<!-- motor controller -->
+	<include file="$(find robot_p)/launch/controller.launch" />
 	<!-- rplidar laser -->
 	<node name="rplidarNode"          pkg="rplidar_ros"  type="rplidarNode" output="screen">
 		<param name="serial_port"         type="string" value="/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0"/>
@@ -8,7 +12,7 @@
 		<param name="angle_compensate"    type="bool"   value="true"/>
 		<remap from="/scan" to="/scan_raw"/>
 	</node>
-	<!-- filtering of poles -->
+	<!-- filtering of poles in laser scan -->
 	<node name="laser_filter" pkg="robot_p" type="laser" output="screen" />
 	<!-- mapping -->
 	<include file="$(find hector_mapping)/launch/mapping_default.launch">
