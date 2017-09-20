@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
   <link name="rear_left_swivel">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <mass value="0.56"/>
+      <inertia ixx="0.004878" ixy="-6.2341e-07" ixz="-7.4538e-07" iyy="0.00090164" iyz="-0.00014394" izz="0.0042946"/>
+    </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
@@ -10,9 +15,15 @@
         <color rgba="0.8 0.8 0.8 1"/>
       </material>
     </visual>
+    <collision>
+      <geometry>
+        <box size="0.06 0.026 0.075"/>
+      </geometry>
+    </collision>
   </link>
-  <joint name="base_rear_left_swivel_joint" type="fixed">
+  <joint name="base_rear_left_swivel_joint" type="continuous">
     <origin xyz="-0.155 0.185 -0.0975" rpy="0 0 0"/>
+    <axis xyz="0 0 1" />
     <anchor xyz="0 1 0"/>
     <limit effort="100" velocity="100" k_velocity="0" />
     <joint_properties damping="0.0" friction="0.0" />
@@ -20,6 +31,11 @@
     <child link="rear_left_swivel"/>
   </joint>
   <link name="rear_left_center_wheel">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <mass value="0.56"/>
+      <inertia ixx="0.004878" ixy="-6.2341e-07" ixz="-7.4538e-07" iyy="0.00090164" iyz="-0.00014394" izz="0.0042946"/>
+    </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="${-3.1415927/2.0} 0 0"/>
       <geometry>
@@ -29,8 +45,14 @@
         <color rgba="0.1 0.1 0.1 1"/>
       </material>
     </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="${-3.1415927/2.0} 0 0"/>
+      <geometry>
+        <cylinder length="0.025" radius="0.05"/>
+      </geometry>
+    </collision>
   </link>
-  <joint name="rear_left_swivel_wheel_joint" type="fixed">
+  <joint name="rear_left_swivel_wheel_joint" type="continuous">
     <origin xyz="-0.03 0 -0.0375" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
     <anchor xyz="0 0 0"/>
@@ -40,6 +62,11 @@
     <child link="rear_left_center_wheel"/>
   </joint>
   <link name="rear_right_swivel">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <mass value="0.56"/>
+      <inertia ixx="0.004878" ixy="-6.2341e-07" ixz="-7.4538e-07" iyy="0.00090164" iyz="-0.00014394" izz="0.0042946"/>
+    </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
@@ -49,9 +76,15 @@
         <color rgba="0.8 0.8 0.8 1"/>
       </material>
     </visual>
+    <collision>
+      <geometry>
+        <box size="0.06 0.026 0.075"/>
+      </geometry>
+    </collision>
   </link>
-  <joint name="base_rear_right_swivel_joint" type="fixed">
+  <joint name="base_rear_right_swivel_joint" type="continuous">
     <origin xyz="-0.155 -0.185 -0.0975" rpy="0 0 0"/>
+    <axis xyz="0 0 1" />
     <anchor xyz="0 1 0"/>
     <limit effort="100" velocity="100" k_velocity="0" />
     <joint_properties damping="0.0" friction="0.0" />
@@ -59,6 +92,11 @@
     <child link="rear_right_swivel"/>
   </joint>
   <link name="rear_right_center_wheel">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <mass value="0.56"/>
+      <inertia ixx="0.004878" ixy="-6.2341e-07" ixz="-7.4538e-07" iyy="0.00090164" iyz="-0.00014394" izz="0.0042946"/>
+    </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="${-3.1415927/2.0} 0 0"/>
       <geometry>
@@ -68,8 +106,14 @@
         <color rgba="0.1 0.1 0.1 1"/>
       </material>
     </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="${-3.1415927/2.0} 0 0"/>
+      <geometry>
+        <cylinder length="0.025" radius="0.05"/>
+      </geometry>
+    </collision>
   </link>
-  <joint name="rear_right_swivel_wheel_joint" type="fixed">
+  <joint name="rear_right_swivel_wheel_joint" type="continuous">
     <origin xyz="-0.03 0 -0.0375" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
     <anchor xyz="0 0 0"/>
