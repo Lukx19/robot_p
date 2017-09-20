@@ -26,8 +26,8 @@ robot_p_diff_drive_controller:
   angular:
     z:
       has_velocity_limits    : true
-      max_velocity           : 0.52360   # rad/s
+      max_velocity           : 1.5708   # rad/s
       has_acceleration_limits: true
-      max_acceleration       : 0.13090   # rad/s^2
+      max_acceleration       : 0.3926   # rad/s^2
   wheel_separation          : 0.3     # m
   wheel_radius              : 0.1025  # m
