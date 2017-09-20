@@ -79,7 +79,7 @@ void RobotHW::write()
   sendMsg(createVelocityMsg(cmd_[0], cmd_[1]));
 }
 
-inline static int radiansToPWM(double vel)
+int robotp::RobotHW::radiansToPWM(double vel) const
 {
   double speed_factor = vel / full_speed_;
   int pwm = (int)(speed_factor * 255);

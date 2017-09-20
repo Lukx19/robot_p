@@ -72,6 +72,7 @@ private:
   double eff_[2];
 
   Msg32 createVelocityMsg(double left_vel, double right_vel) const;
+  int radiansToPWM(double vel) const;
 
   template <typename T>
   void sendMsg(const T& msg)
