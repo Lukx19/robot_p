@@ -20,14 +20,14 @@ robot_p_diff_drive_controller:
   linear:
     x:
       has_velocity_limits    : true
-      max_velocity           : 2.0   # m/s
+      max_velocity           : 0.94671   # m/s
       has_acceleration_limits: true
-      max_acceleration       : 20.0   # m/s^2
+      max_acceleration       : 0.23668   # m/s^2
   angular:
     z:
       has_velocity_limits    : true
-      max_velocity           : 4.0   # rad/s
+      max_velocity           : 0.52360   # rad/s
       has_acceleration_limits: true
-      max_acceleration       : 25.0   # rad/s^2
-  wheel_separation          : 0.5   # m
-  wheel_radius              : 0.35  # m
+      max_acceleration       : 0.13090   # rad/s^2
+  wheel_separation          : 0.3     # m
+  wheel_radius              : 0.1025  # m
