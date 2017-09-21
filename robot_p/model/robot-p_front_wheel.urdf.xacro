@@ -22,7 +22,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="base_to_front_left_wheel" type="continuous">
+  <joint name="base_to_front_left_wheel" type="fixed">
     <origin xyz="0.07 0.175 -0.075"/>
     <axis xyz="0 1 0" />
     <parent link="base_link"/>
@@ -50,7 +50,7 @@
       </geometry>
     </collision>
   </link>
-  <joint name="base_to_right_left_wheel" type="continuous">
+  <joint name="base_to_right_left_wheel" type="fixed">
     <axis xyz="0 -1 0" />
     <origin xyz="0.07 -0.175 -0.075"/>
     <parent link="base_link"/>
