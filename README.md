@@ -1,10 +1,47 @@
 robot_p
 =======
 
-ROS software stack for a custom robot
+ROS software stack for a custom robot.
+
+Quick start
+-----------
+
+Connect to wi-fi network with SSID `robot-hotspot`.
+
+Connect to robot via SSH.
+
+```
+ssh -YC robot@10.42.0.1
+```
+
+Start docker container with ROS installation.
+
+```
+./ros-robot-p.sh
+```
+
+Start tmux to have multiple terminals inside docker.
+
+```
+tmux
+```
+
+Start robot ROS stack including mapping via `hector_slam` and navigation via `move_base`.
+
+```
+roslaunch robot_p run_robot.launch
+```
+
+Create a new terminal window by pressing `<CTRL>+<B> <c>`. Get some visualisation with `rviz`.
+
+```
+rviz
+```
+
+There is a prepared configuration file `robot-p.rviz`. You show now be able to see the map in rviz and navigate the robot by placing nav goal in the map.
 
 URDF
-----------
+----
 
 ### URDF model
 
@@ -67,7 +104,7 @@ T <16 bit signed> <16 bit signed> <CRC-8>
 
   left wheel        right wheel
 ```
-ticks from previous message 
+ticks from previous message
 
 ```
 ALM_L <CRC-8>
@@ -82,7 +119,7 @@ left (right) driver sent ALM signal, controller is now in stopped state
 ```
 [PID] <16 bit unsigned> <CRC-8>
 
-        float * 32 
+        float * 32
 ```
 
 ```
@@ -100,19 +137,19 @@ V <16 bit signed> <16 bit signed> <CRC-8>
 ```
 ETOP\0 <CRC-8>
 ```
-all timers stop and ENBL is set to 1 
+all timers stop and ENBL is set to 1
 
 
 ```
 START <CRC-8>
 ```
-all timers start and ENBL is set to 0 
+all timers start and ENBL is set to 0
 
 this message has to be sent before any other
 
 #### Atmega328P notes
 
-- Since base unit for atmel328P is 1 byte processor can not deal for example with int atomically. Thus there can be race condition between main loop and interrupts. By default interupts can not be interrupted by another one. Interrupts are waiting until they are processed. 
+- Since base unit for atmel328P is 1 byte processor can not deal for example with int atomically. Thus there can be race condition between main loop and interrupts. By default interupts can not be interrupted by another one. Interrupts are waiting until they are processed.
 
 - full data sheet -> http://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-42735-8-bit-AVR-Microcontroller-ATmega328-328P_Datasheet.pdf
 
@@ -126,7 +163,7 @@ this message has to be sent before any other
 #### Timers
 Controller uses following two timers:
 
-*   TC1 - 16 bit - Generates PWM at frequency 1 kHz. 
+*   TC1 - 16 bit - Generates PWM at frequency 1 kHz.
 *   TC0 - 8 bit - Generates interrupts at frequency 125 Hz. Following rutines are executed in every 5th interrupt thus 25 Hz.
    *   current speed transmission to ROS
    *   PID update computation
@@ -138,7 +175,7 @@ Controller uses following two timers:
 All reception is done in reception interrupt thus there is no active wating for incoming messages. Transmisson method call is always "synchronous". (whole message has to be sent to leave function)
 
 #### External interrupts
-There are two pins INT0/1 allowing to call interrupt when pin value is changed. These two pins are connected to SPEED signals and interrupt event is set to raising edge. 
+There are two pins INT0/1 allowing to call interrupt when pin value is changed. These two pins are connected to SPEED signals and interrupt event is set to raising edge.
 
 To let this work there has to be created external pull ups by connecting desired pin and 5V using resistor!
 
