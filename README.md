@@ -6,7 +6,14 @@ ROS software stack for a custom robot
 URDF
 ----------
 
-TODO
+### URDF model
+
+This model is written in Xacro macro language. Describes simple 3D model of robot_p. Model contains laser scanner and front & rear wheels.
+
+Xacro -> http://wiki.ros.org/xacro
+
+![urdf](./robot_p/model/Model.png "3D Model")
+![urdf](./robot_p/model/TF.png "TF Tree")
 
 ROS control
 ----------
