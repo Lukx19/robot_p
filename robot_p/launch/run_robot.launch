@@ -19,4 +19,6 @@
 		<arg name="base_frame" value="base_link"/>
 		<arg name="odom_frame" value="odom"/>
 	</include>
+	<!-- move_base navigation -->
+	<include file="$(find robot_p)/launch/move_base.launch" />
 </launch>
