@@ -22,7 +22,7 @@
     </collision>
   </link>
   <joint name="laser_pillar_to_laser_scanner" type="fixed">
-    <origin xyz="0.0 0 0.06"/>
+    <origin xyz="0.0 0 0.06" rpy="0.0 0.0 3.1416"/>
     <parent link="laser_pillar"/>
     <child link="laser_scanner"/>
   </joint>
