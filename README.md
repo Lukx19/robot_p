@@ -52,11 +52,6 @@ Xacro -> http://wiki.ros.org/xacro
 ![urdf](./robot_p/model/Model.png "3D Model")
 ![urdf](./robot_p/model/TF.png "TF Tree")
 
-ROS control
-----------
-
-TODO
-
 Controller
 ----------
 
